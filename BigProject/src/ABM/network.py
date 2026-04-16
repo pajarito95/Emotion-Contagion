@@ -1,93 +1,235 @@
+"""
+Build directed, row-normalized intimacy matrices for the emotion contagion ABM.
+
+Current design assumptions:
+- All agents, including leader, are part of one shared intimacy matrix.
+- Leader is identified by `leader_index`.
+- Follower-follower ties are generated according to the chosen network structure.
+- Leader-related ties are allowed in the matrix, but can be modified later by build_simulation.py if leader-member ties should follow different rules.
+- Matrix is directed/asymmetric and row-normalized.
+
+TODO: Now that the leader is kept in the intimacy matrix, we need to address how to handle its inclusion in the community and core-periphery structures. 
+      Currently it's just assigned to a group like any other agent.
+"""
+
+from __future__ import annotations
+from typing import Optional, Sequence
 import numpy as np
 
+
+VALID_STRUCTURES = {"community", "random", "core_periphery"}
+
+def _validate_common_inputs(
+    population: int,
+    structure: str,
+    min_weight: float,
+    leader_index: Optional[int],
+) -> None:
+    if not isinstance(population, int):
+        raise TypeError(f"population must be an integer, but received {type(population).__name__}.")
+
+    if population < 2:
+        raise ValueError(
+            "population must be at least 2 so the simulation has one leader and at least one member."
+        )
+
+    if structure not in VALID_STRUCTURES:
+        raise ValueError(f"Invalid structure {structure!r}. Choose from: {sorted(VALID_STRUCTURES)}.")
+
+    if not (0 < min_weight < 1):
+        raise ValueError(f"min_weight must be between 0 and 1, but received {min_weight}.")
+
+    if leader_index is not None and not (0 <= leader_index < population):
+        raise ValueError(f"leader_index={leader_index} is out of bounds for population={population}.")
+
+
+def _validate_strength(value: float, name: str) -> None:
+    if not (0 <= value <= 1):
+        raise ValueError(f"{name} must be between 0 and 1, but received {value}.")
+
+
+def _normalize_rows(matrix: np.ndarray) -> np.ndarray:
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    if np.any(row_sums <= 0):
+        raise ValueError(
+            "At least one row of the intimacy matrix has zero sum before normalization. Increase tie weights or avoid zeroing an entire row.")
+    return matrix / row_sums
+
+
+def _sample_weight(rng: np.random.Generator, upper_bound: float, min_weight: float) -> float:
+    if upper_bound < min_weight:
+        raise ValueError(f"Upper bound {upper_bound} is smaller than min_weight {min_weight}. Either increase the upper bound or decrease min_weight.")
+    return float(rng.uniform(min_weight, upper_bound))
+
+
+def _community_assignments(
+    rng: np.random.Generator,
+    population: int,
+    size: Optional[Sequence[int]] = None,
+) -> np.ndarray:
+    """
+    Create two-community assignments over the full population.
+
+    Returns
+    -------
+    np.ndarray
+        Array of length population with labels {0, 1}
+    """
+    if size is None:
+        n0 = population // 2
+        n1 = population - n0
+    else:
+        if len(size) != 2:
+            raise ValueError(f"For community structure, size must have length 2, but received {size}.")
+        n0, n1 = size
+        if n0 + n1 != population:
+            raise ValueError(f"Community sizes must sum to population={population}, but received {size}.")
+
+    assignments = np.ones(population, dtype=int)
+    group0_indices = rng.choice(population, size=n0, replace=False)
+    assignments[group0_indices] = 0
+
+    return assignments
+
+
+def _core_periphery_assignments(
+    rng: np.random.Generator,
+    population: int,
+    core_proportion: float,
+) -> np.ndarray:
+    """
+    Create core-periphery assignments over the full population.
+
+    Returns
+    -------
+    np.ndarray
+        Array of length population with labels {0, 1}, where 1 = core and 0 = periphery.
+    """
+    _validate_strength(core_proportion, "core_proportion")
+
+    core_size = max(1, round(population * core_proportion))
+    core_indices = rng.choice(population, size=core_size, replace=False)
+
+    assignments = np.zeros(population, dtype=int)
+    assignments[core_indices] = 1
+
+    return assignments
+
+
 def create_intimacy_matrix(
-    rng,
-    population,
-    structure,
-    intra_strength,  # within (arbitrary placeholder values)
-    inter_strength,  # between
-    core_to_core=0.65,      # core-core (those within the core influence); also idk how i feel with these weights; how should we even do them?
-    core_to_periph=0.5,     # core -> periphery (core to periphery influence)
-    periph_to_core=0.2,     # periphery -> core (periphery to core ifluence)
-    periph_to_periph=0.2,    # periphery-periphery (those within the periphery influence)
-    core_proportion=0.25,    # what percentage of nodes do we want in the core
-    size=None,
-    min_weight=0.01,
-):
+    rng: np.random.Generator,
+    population: int,
+    structure: str,
+    intra_strength: float,
+    inter_strength: float,
+    core_to_core: float = 0.65,
+    core_to_periph: float = 0.5,
+    periph_to_core: float = 0.2,
+    periph_to_periph: float = 0.2,
+    core_proportion: float = 0.25,
+    size: Optional[Sequence[int]] = None,
+    min_weight: float = 0.01,
+    leader_index: Optional[int] = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Create an asymmetric, row-normalized intimacy matrix for two communities, random, or core-periphery structure.
-    For random, intra_strength and inter_strength should be the same and size is ignored. The strengths function as a cap/upper bound for the (random) intimacy values
-    
-    TODO: community is currently set up for two communities, but can be made more dynamic by changing the block structure and assignment logic.
+    Create an asymmetric, row-normalized intimacy matrix over all agents.
+
+    Parameters
+    ----------
+    rng: np.random.Generator
+        Random number generator
+    population: int
+        Total number of agents, including the leader
+    structure: str
+        One of: "community", "random", "core_periphery"
+    intra_strength: float
+        Within-group upper bound for community/random structures
+    inter_strength: float
+        Between-group upper bound for community/random structures
+    core_to_core: float, optional
+        Upper bound for core -> core ties in core-periphery structure
+    core_to_periph: float, optional
+        Upper bound for core -> periphery ties
+    periph_to_core: float, optional
+        Upper bound for periphery -> core ties
+    periph_to_periph: float, optional
+        Upper bound for periphery -> periphery ties
+    core_proportion: float, optional
+        Fraction of agents assigned to the core
+    size: sequence[int] or None, optional
+        Community sizes for two-community structure
+    min_weight: float, optional
+        Minimum raw tie weight before normalization
+    leader_index: int or None, optional
+        Index of the leader. Currently used for validation/consistency only
+        Leader-related tie customization is handled in build_simulation.py
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        intimacy_matrix: np.ndarray
+            Full NxN directed, row-normalized intimacy matrix
+        assignments: np.ndarray
+            Structure assignments:
+            - community/random: {0, 1}
+            - core_periphery: {0, 1} with 1 = core, 0 = periphery
     """
-    assert structure in ["community", "random", "core-periphery"], "Structure must be 'community', 'random', or 'core-periphery'."
-    assert not (structure == "random" and (intra_strength != inter_strength)), "For random structure, intra_strength and inter_strength must be the same."
-    assert population % 2 == 0, "Population (team size) must be even."
-    assert 0 < min_weight < 1, "min_weight must be between 0 and 1."
-    assert (0 <= intra_strength <= 1 and 0 <= inter_strength <= 1) or (0 <= core_to_core <= 1 and 0 <= core_to_periph <= 1 and 0 <= periph_to_core <= 1 and 0 <= periph_to_periph <= 1), "Strength values must be given and must between 0 and 1."
-    
+    _validate_common_inputs(
+        population=population,
+        structure=structure,
+        min_weight=min_weight,
+        leader_index=leader_index,
+    )
 
-    if structure == "community" or structure == "random":
-        if size is None:
-            n1 = population // 2
-            n2 = population - n1
-        else:
-            n1, n2 = size
-            assert n1 + n2 == population, "size must sum to population."
-        
-        # Randomly assign communities: 0 and 1
-        assignments = np.ones(population, dtype=int)
-        community0_indices = rng.choice(population, size=n1, replace=False)
-        assignments[community0_indices] = 0  # 0 = community 0, 1 = community 1
+    _validate_strength(intra_strength, "intra_strength")
+    _validate_strength(inter_strength, "inter_strength")
+    _validate_strength(core_to_core, "core_to_core")
+    _validate_strength(core_to_periph, "core_to_periph")
+    _validate_strength(periph_to_core, "periph_to_core")
+    _validate_strength(periph_to_periph, "periph_to_periph")
 
-        # Block upper bounds
-        block_bounds = np.array([
-            [intra_strength, inter_strength],
-            [inter_strength, intra_strength]
-        ])
+    if structure == "random" and intra_strength != inter_strength:
+        raise ValueError("For structure='random', intra_strength and inter_strength must match.")
+
+    if structure in {"community", "random"}:
+        assignments = _community_assignments(rng=rng, population=population, size=size)
+
+        block_bounds = np.array([[intra_strength, inter_strength], [inter_strength, intra_strength]], dtype=float)
 
         W = np.zeros((population, population), dtype=float)
+
         for i in range(population):
             for j in range(population):
-                bound = block_bounds[assignments[i], assignments[j]]
-                assert bound >= min_weight, "min_weight exceeds upper bound."
-                W[i, j] = rng.uniform(min_weight, bound)
+                if i == j:
+                    continue
 
-        # Normalize so each row sums to 1
-        intimacyMatrix = W / W.sum(axis=1, keepdims=True)
+                upper = block_bounds[assignments[i], assignments[j]]
+                W[i, j] = _sample_weight(rng=rng, upper_bound=upper, min_weight=min_weight)
 
-        return intimacyMatrix, assignments
-    
+        np.fill_diagonal(W, 0.0)
+        intimacy_matrix = _normalize_rows(W)
 
-    elif structure == "core-periphery":
-        assert 0 <= core_proportion <= 1
-        core_size = max(1, round(population * core_proportion))  # at least 1 core node
-        #periph_size = population - core_size  # comment this out for random assignment
-        
-        # Assign first `core_size` as core (1), rest as periphery (0)
-        #assignments = np.array([1]*core_size + [0]*periph_size)  # comment this out for random assignment
-        
-        # Or randomly assign core/periphery
-        core_indices = rng.choice(population, size=core_size, replace=False)
-        assignments = np.zeros(population, dtype=int)
-        assignments[core_indices] = 1  # 1 = core, 0 = periphery
+        return intimacy_matrix, assignments
 
-        # block bounds: [from_type, to_type]
+    if structure == "core_periphery":
+        assignments = _core_periphery_assignments(rng=rng, population=population, core_proportion=core_proportion)
+
         # 1 = core, 0 = periphery
-        block_bounds = np.array([
-            [periph_to_periph, periph_to_core],
-            [core_to_periph, core_to_core]
-        ])
-        
-        W = np.zeros((population, population))
+        block_bounds = np.array([[periph_to_periph, periph_to_core], [core_to_periph, core_to_core]], dtype=float)
+
+        W = np.zeros((population, population), dtype=float)
+
         for i in range(population):
             for j in range(population):
-                bound = block_bounds[assignments[i], assignments[j]]
-                assert bound >= min_weight, "min_weight exceeds an upper bound; lower it."
-                W[i, j] = rng.uniform(min_weight, bound)
-        
-        # row normalize
-        intimacyMatrix = W/W.sum(axis=1, keepdims=True)
-        
-        return intimacyMatrix, assignments
-    
+                if i == j:
+                    continue
+
+                upper = block_bounds[assignments[i], assignments[j]]
+                W[i, j] = _sample_weight(rng=rng, upper_bound=upper, min_weight=min_weight)
+
+        np.fill_diagonal(W, 0.0)
+        intimacy_matrix = _normalize_rows(W)
+
+        return intimacy_matrix, assignments
+
+    raise ValueError(f"Unhandled structure {structure!r}. This should not happen after validation.")
