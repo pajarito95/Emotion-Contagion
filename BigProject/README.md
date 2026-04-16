@@ -7,6 +7,8 @@ This project runs an emotion contagion agent-based model with:
 - single runs or multi-condition experiment batches
 - configuration-driven execution through a YAML file
 
+Note that this version does not yet have the RL extension. That might get added in later as an optional layer.
+
 ## What is `__init__.py` for?
 
 `__init__.py` tells Python that a folder should be treated as a package/module directory. It helps Python recognize that the files in that folder belong together and can be imported cleanly.
