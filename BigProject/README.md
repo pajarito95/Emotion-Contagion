@@ -7,7 +7,7 @@ This project runs an emotion contagion agent-based model with:
 - single runs or multi-condition experiment batches
 - configuration-driven execution through a YAML file
 
-Note that this version does not yet have the RL extension. That might get added in later as an optional layer.
+Note that this version does not have the RL extension. That might get added in later as an optional layer.
 
 ## What is `__init__.py` for?
 
