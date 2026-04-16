@@ -46,7 +46,7 @@ Builds the initial intimacy matrix.
 
 Go here if you want to change:
 - how the community, random, or core-periphery structure is generated
-- follower-follower tie generation
+- member-member tie generation
 - structural assignments
 - row-normalization behavior
 
@@ -182,7 +182,7 @@ Useful if you prefer working in Jupyter or want to inspect outputs interactively
 
 You can also call the code directly.
 
-Single run:
+Single run example:
 
 ```python
 from run_simulation import run_simulation
@@ -197,7 +197,7 @@ results = run_simulation(
 )
 ```
 
-Batch run:
+Batch run example:
 
 ```python
 from run_multiple_simulations import run_multiple_simulations
