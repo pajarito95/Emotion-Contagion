@@ -14,15 +14,16 @@ Current design assumptions:
 
 from __future__ import annotations
 
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence
-
+import json
 import pickle
+from datetime import datetime
+
 import pandas as pd
 
 from run_simulation import run_simulation
-
 
 def resolve_output_root(output_root: Optional[str | Path] = None) -> Path:
     """
@@ -165,6 +166,22 @@ def save_summary_table(summary_rows: List[Dict[str, Any]], filepath: Path) -> pd
     df.to_csv(filepath, index=False)
     return df
 
+def save_run_metadata_file(results, filepath: Path) -> None:
+    """
+    Save compact metadata for on simulation run as json
+    """
+    metadata = {
+        "run_id": results.run_id,
+        "seed": results.seed,
+        "metadata": results.metadata,
+        "leader_summary" = results.leader_summary,
+        "num_interventions" = len(results.interventions_timesteps),
+        "intervention_timesteps": results.intervention_timesteps,
+        "total_interactions": sum(results.interactions_per_timestep),
+    }
+
+    with filepath.open("w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2, default=str)
 
 def run_multiple_simulations(
     seeds: Sequence[int],
@@ -196,11 +213,15 @@ def run_multiple_simulations(
     output_root: Optional[str | Path] = None,
     output_subdir: Optional[str] = "outputs",
     create_subfolders: bool = True,
+    add_timestamps_to_output_dir: bool = False,
+    separate_condition_folders: bool = False,
     separate_run_folders: bool = False,
     save_full_results: bool = True,
     save_summary: bool = True,
+    save_run_metadata: bool = True,
     summary_filename: str = "summary.csv",
     results_filename_template: str = "simulation_result_run_{run_id}.pkl",
+    metadata_filename_template: str = "simulation_result_run_{run_id}_metadata.json",
 ) -> Dict[str, Any]:
     """
     Run multiple simulations over a sequence of seeds.
@@ -253,11 +274,23 @@ def run_multiple_simulations(
     if "{run_id}" not in results_filename_template:
         raise ValueError("results_filename_template must contain the placeholder {run_id}.")
 
+    if save_run_metadata and "{run_id}" not in metadata_filename_template:
+        raise ValueError("metadata_filename_template must contain the placeholder {run_id}.")
+
     output_dir = prepare_output_directory(
         output_root=output_root,
         output_subdir=output_subdir,
         create_subfolders=create_subfolders,
     )
+
+    if add_timestamps_to_output_dir:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = output_dir / timestamp
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    if separate_condition_folders and condition_name:
+        output_dir = output_dir / condition_name
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     all_results = []
     summary_rows = []
@@ -297,15 +330,21 @@ def run_multiple_simulations(
         all_results.append(results)
         summary_rows.append(_results_to_summary_row(results, condition_name=condition_name))
 
-        if save_full_results:
-            run_output_dir = _make_run_output_dir(
-                base_output_dir=output_dir,
-                run_id=run_id,
-                separate_run_folders=separate_run_folders,
+        run_output_dir = _make_run_output_dir(
+            base_output_dir=output_dir,
+            run_id=run_id,
+            separate_run_folders=separate_run_folders,
             )
+        
+        if save_full_results:
             results_filename = results_filename_template.format(run_id=run_id)
             results_path = run_output_dir / results_filename
             save_simulation_result(results, results_path)
+
+        if save_run_metadata:
+            metadata_filename = metadata_filename_template.format(run_id=run_id)
+            metadata_path = run_output_dir / metadata_filename
+            save_run_metadata_file(results, metadata_path)
 
     summary_df = None
     summary_path = None
