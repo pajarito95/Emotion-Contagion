@@ -174,8 +174,8 @@ def save_run_metadata_file(results, filepath: Path) -> None:
         "run_id": results.run_id,
         "seed": results.seed,
         "metadata": results.metadata,
-        "leader_summary" = results.leader_summary,
-        "num_interventions" = len(results.interventions_timesteps),
+        "leader_summary": results.leader_summary,
+        "num_interventions": len(results.interventions_timesteps),
         "intervention_timesteps": results.intervention_timesteps,
         "total_interactions": sum(results.interactions_per_timestep),
     }
