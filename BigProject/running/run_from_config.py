@@ -55,13 +55,46 @@ def run_from_config(config: Dict[str, Any]):
         conditions = config.get("manual_conditions", [])
         batch = run_multiple_simulations(**common_kwargs, conditions=conditions)
     elif mode == "grid":
+        import itertools
+        import pandas as pd
+        
         grid_cfg = config.get("grid", {})
+        fixed_params = grid_cfg.get("fixed_params", {})
+        condition_grid = grid_cfg.get("condition_grid", {})
+        condition_name_keys = grid_cfg.get("condition_name_keys", list(condition_grid.keyd()))
+
+        keys = list(condition_grid.keys())
+        values = [condition_grid[k] for k in keys]
+
+        all_results = []
+        summary_dfs = []
+        output_dirs = []
+        summary_paths = []
+
+        for combo in itertools.product(*values):
+            condition_params = dict(zip(keys, combo))
+            condition_name = "_".join(f"{k}-{condition_params[k]}" for k in condition_name_keys if k in condition_params)
+
+        merged = {**common_kwargs, **fixed_params, **condition_params,  "condition_name": condition_name}
+        
+        batch_i = run_multiple_simulations(**_filter_kwargs_for_callable(run_multiple_simulations, merged))
+        
+        all_results.extend(batch_i["results"])
+        
+        if batch_i.get("summary_df") is not None:
+            summary_dfs.append(batch_i["summary_df"])
+
+        output_dirs.append(batch_i["output_dir"])
+        summary_paths.append(batch_i["summary_path"])
+
+        summary_df = pd.concat(summary_dgs, ignore_index=True) if summary_dfs else None
+        
         batch = run_multiple_simulations(
-            **common_kwargs,
-            condition_grid=grid_cfg.get("condition_grid"),
-            fixed_params=grid_cfg.get("fixed_params"),
-            condition_name_keys=grid_cfg.get("condition_name_keys"),
-        )
+            "results": all_results,
+            "summary_df": summary_df,
+            "output_dir": output_dirs[0] if output_dirs else None,
+            "summary_path": summary_paths[0] if summary_paths else None
+            )
     else:
         raise ValueError(f"Unsupported mode {mode!r}. Choose from 'single', 'manual', or 'grid'.")
 
