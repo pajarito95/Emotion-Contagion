@@ -25,9 +25,9 @@ import pandas as pd
 
 from run_simulation import run_simulation
 
-def resolve_output_root(output_root: Optional[str | Path] = None) -> Path:
+def define_output_root(output_root: Optional[str | Path] = None) -> Path:
     """
-    Resolve the main parent output path. If output_root is None, the current working directory is used.
+    Set the main parent output path. If output_root is None, the current working directory is used.
 
     Parameters
     ----------
@@ -70,7 +70,7 @@ def prepare_output_directory(
     Path
         Final output directory
     """
-    root = resolve_output_root(output_root)
+    root = define_output_root(output_root)
 
     if create_subfolders and output_subdir:
         outdir = root / output_subdir
