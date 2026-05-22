@@ -8,3 +8,4 @@ igraph>=0.11
 PyYAML>=6.0
 scikit-posthocs>=0.9
 statsmodels>=0.14
+ipykernal>=7.2.0
