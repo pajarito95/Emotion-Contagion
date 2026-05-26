@@ -145,6 +145,6 @@ def main(results_dir: str | Path, output_dir: str | Path) -> None:
 
 if __name__ == "__main__":
     main(
-        results_dir="outputs",
-        output_dir="outputs/for_r",
+        results_dir=PROJECT_ROOT / "outputs",
+        output_dir=PROJECT_ROOT / "outputs" / "for_r",
     )
