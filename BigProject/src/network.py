@@ -2,10 +2,10 @@
 Build directed, row-normalized intimacy matrices for the emotion contagion ABM.
 
 Current design assumptions:
-- All agents, including leader, are part of one shared intimacy matrix.
-- Leader is identified by `leader_index`.
+- All agents, including the leader, are part of one shared intimacy matrix.
+- The leader is identified by `leader_index`.
 - Each network structure has its own natural parameterization.
-- Matrix is directed/asymmetric and row-normalized.
+- The matrix is directed/asymmetric and row-normalized.
 
 Structure-specific inputs:
 - random:
@@ -87,7 +87,8 @@ def _community_assignments(
     """
     Create assignments for a community structure over the full population.
 
-    Returns an integer array of length population with labels in {0, ..., n_communities-1}.
+    Returns an integer array of length population with labels in
+    {0, ..., n_communities - 1}.
     """
     if not isinstance(n_communities, int):
         raise TypeError(f"n_communities must be an integer, but received {type(n_communities).__name__}.")
@@ -192,7 +193,8 @@ def create_intimacy_matrix(
     Core-periphery-specific parameters
     ----------------------------------
     n_periphery : int
-        Number of peripheral agents. Under the current design this must equal the number of non-leader agents.
+        Number of peripheral agents. Under the current design this must equal
+        the number of non-leader agents.
     core_to_periph : float
         Upper bound for leader/core -> periphery ties.
     periph_to_core : float

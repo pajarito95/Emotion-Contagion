@@ -45,13 +45,55 @@ def load_config(config_path: str | Path) -> Dict[str, Any]:
 
     return config
 
+def _resolve_seeds(config: Dict[str, Any]) -> list[int]:
+    """
+    Resolve seeds either from an explicit list or from a compact seed specification.
+    """
+    if "seeds" in config and config["seeds"] is not None:
+        seeds = config["seeds"]
+        if not isinstance(seeds, list):
+            raise TypeError("config['seeds'] must be a list of integers.")
+        return seeds
+
+    if "seed_spec" in config and config["seed_spec"] is not None:
+        seed_spec = config["seed_spec"]
+
+        if not isinstance(seed_spec, dict):
+            raise TypeError("config['seed_spec'] must be a dictionary.")
+
+        start = seed_spec.get("start", 0)
+        n_repetitions = seed_spec.get("n_repetitions")
+
+        if n_repetitions is None:
+            raise ValueError("seed_spec must include 'n_repetitions'.")
+
+        if not isinstance(start, int):
+            raise TypeError("seed_spec['start'] must be an integer.")
+
+        if not isinstance(n_repetitions, int):
+            raise TypeError("seed_spec['n_repetitions'] must be an integer.")
+
+        if n_repetitions < 1:
+            raise ValueError("seed_spec['n_repetitions'] must be at least 1.")
+
+        return list(range(start, start + n_repetitions))
+
+    raise ValueError("The config must contain either 'seeds' or 'seed_spec'.")
+
 
 def _build_output_kwargs(output_cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract output-related keyword arguments for run_multiple_simulations(...).
+
+    If output_root is not provided in the YAML, default to PROJECT_ROOT so outputs
+    are saved under BigProject/outputs rather than BigProject/running/outputs.
     """
+    output_root = output_cfg.get("output_root")
+    if output_root is None:
+        output_root = str(PROJECT_ROOT)
+
     return {
-        "output_root": output_cfg.get("output_root"),
+        "output_root": output_root,
         "output_subdir": output_cfg.get("output_subdir", "outputs"),
         "create_subfolders": output_cfg.get("create_subfolders", True),
         "add_timestamp_to_output_dir": output_cfg.get("add_timestamp_to_output_dir", True),
@@ -120,16 +162,14 @@ def _combine_batch_outputs(batches: list[Dict[str, Any]]) -> Dict[str, Any]:
 def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Run simulations according to the YAML config.
+
     Supported modes:
     - single
     - manual
     - grid
     """
     mode = config.get("mode", "single")
-    seeds = config.get("seeds")
-
-    if seeds is None:
-        raise ValueError("The config must contain a 'seeds' entry.")
+    seeds = _resolve_seeds(config)
 
     output_cfg = config.get("output", {})
     output_kwargs = _build_output_kwargs(output_cfg)

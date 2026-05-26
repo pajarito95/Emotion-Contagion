@@ -10,27 +10,74 @@ import pandas as pd
 
 
 def plot_sentiment_evolution(results, save_path: Optional[str | Path] = None, show: bool = False):
-    fig, ax = plt.subplots(figsize=(8, 5))
-    timesteps = list(range(len(results.avg_emotion_history)))
-    ax.plot(timesteps, results.avg_emotion_history, label="Average member emotion")
-    if results.intervention_timesteps:
-        intervention_y = [results.avg_emotion_history[t] for t in results.intervention_timesteps if t < len(results.avg_emotion_history)]
-        ax.scatter(results.intervention_timesteps, intervention_y, marker="o", label="Leader intervention")
+    """
+    Plot sentiment evolution for one run.
+
+    Intended behavior:
+    - plot each agent's emotion trajectory over time as grey lines
+    - plot the average team/member emotion over time as a red line
+    - plot leader intervention timesteps as blue vertical dashed lines
+    - include leader style, network structure, seed, and run id in the title
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    emotion_history = results.emotion_history
+    n_timesteps = len(emotion_history)
+    timesteps = list(range(n_timesteps))
+
+    if n_timesteps == 0:
+        raise ValueError("results.emotion_history is empty, so there is nothing to plot.")
+
+    n_agents = len(emotion_history[0])
+
+    # Plot individual member-only trajectories in grey
+    member_indices = [
+        i for i, agent in enumerate(results.state.agents)
+        if agent.get("role") == "member"
+    ]
+
+    for agent_index in member_indices:
+        series = [emotion_history[t][agent_index] for t in timesteps]
+        ax.plot(timesteps, series, color="grey", alpha=0.35, linewidth=1)
+
+    # Plot average member emotion in red
+    avg_series = results.avg_emotion_history
+    avg_timesteps = list(range(len(avg_series)))
+    ax.plot(avg_timesteps, avg_series, color="red", linewidth=2.5, label="Average member emotion")
+
+    # Plot intervention timesteps as blue vertical dashed lines
+    intervention_timesteps = results.intervention_timesteps or []
+    first_line = True
+    for t in intervention_timesteps:
+        if first_line:
+            ax.axvline(t, color="blue", linestyle="--", alpha=0.7, linewidth=1.5, label="Leader intervention")
+            first_line = False
+        else:
+            ax.axvline(t, color="blue", linestyle="--", alpha=0.7, linewidth=1.5)
+
+    leader_style = results.metadata.get("leader_style", "UnknownStyle")
+    structure = results.metadata.get("structure", "UnknownStructure")
+    seed = results.seed
+    run_id = results.run_id
+
     ax.set_xlabel("Timestep")
-    ax.set_ylabel("Average member emotion")
-    ax.set_title(f"Sentiment evolution for run {results.run_id}")
+    ax.set_ylabel("Emotion")
+    ax.set_title(f"Sentiment Evolution | Style: {leader_style} | Structure: {structure} | Seed: {seed} | Run: {run_id}")
     ax.set_ylim(-1, 1)
-    ax.legend()
     ax.grid(True, alpha=0.3)
+    ax.legend()
     fig.tight_layout()
+
     if save_path is not None:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=200, bbox_inches="tight")
+
     if show:
         plt.show()
     else:
         plt.close(fig)
+
     return fig
 
 
