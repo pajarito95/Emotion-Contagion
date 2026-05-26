@@ -85,8 +85,7 @@ def _build_output_kwargs(output_cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract output-related keyword arguments for run_multiple_simulations(...).
 
-    If output_root is not provided in the YAML, default to PROJECT_ROOT so outputs
-    are saved under BigProject/outputs rather than BigProject/running/outputs.
+    If output_root is not provided in the YAML, default to PROJECT_ROOT so outputs are saved under BigProject/outputs.
     """
     output_root = output_cfg.get("output_root")
     if output_root is None:
@@ -112,7 +111,7 @@ def _make_sentiment_plots(batch: Dict[str, Any], output_cfg: Dict[str, Any]) -> 
     """
     Save sentiment evolution plots for each run if requested.
     """
-    if not output_cfg.get("make_sentiment_plots", True):
+    if not output_cfg.get("make_sentiment_plots", False):
         return
 
     output_dir = batch.get("output_dir")

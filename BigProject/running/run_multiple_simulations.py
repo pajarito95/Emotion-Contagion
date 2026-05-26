@@ -1,20 +1,22 @@
 """
 Batch runner for the emotion contagion ABM.
-- Run multiple simulations across one or many conditions.
-- Build conditions manually or automatically from parameter grids.
-- Save full SimulationResults objects as pickle files.
-- Save readable JSON metadata files alongside pickles.
-- Save a compact batch summary CSV.
-- Allow user-defined parent output path.
-- Fall back to the current working directory when no path is provided.
-- Optionally timestamp output folders to prevent overwriting.
+
+- Run multiple simulations across one or many conditions
+- Build conditions manually or automatically from parameter grids
+- Save full SimulationResults objects as pickle files
+- Save readable JSON metadata files alongside pickles
+- Save a compact batch summary CSV
+- Allow user-defined parent output path
+- Fall back to the current working directory when no path is provided
+- Optionally create timestamped subfolders inside the main output folder
+- Write a human-readable note.txt describing the batch
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from datetime import datetime
 from itertools import product
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 import json
@@ -23,19 +25,15 @@ import pandas as pd
 
 from run_simulation import run_simulation
 
-
 DEFAULT_OUTPUT_SUBDIR = "outputs"
-
 
 def resolve_output_root(output_root: Optional[str | Path] = None) -> Path:
     if output_root is None:
         return Path.cwd().resolve()
     return Path(output_root).expanduser().resolve()
 
-
 def make_timestamp_string() -> str:
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
 
 def prepare_output_directory(
     output_root: Optional[str | Path] = None,
@@ -43,19 +41,29 @@ def prepare_output_directory(
     create_subfolders: bool = True,
     add_timestamp_to_output_dir: bool = False,
 ) -> Path:
+    """
+    Prepare the directory where batch outputs will be written.
+
+    Desired behavior:
+    - If output_root is BigProject and output_subdir is "outputs",
+      then base output folder is BigProject/outputs
+    - If add_timestamp_to_output_dir is True, results go inside:
+      BigProject/outputs/<timestamp>
+    """
     root = resolve_output_root(output_root)
 
     if create_subfolders and output_subdir:
-        final_subdir = output_subdir
-        if add_timestamp_to_output_dir:
-            final_subdir = f"{output_subdir}_{make_timestamp_string()}"
-        outdir = root / final_subdir
+        base_dir = root / output_subdir
     else:
-        outdir = root
+        base_dir = root
+
+    if add_timestamp_to_output_dir:
+        outdir = base_dir / make_timestamp_string()
+    else:
+        outdir = base_dir
 
     outdir.mkdir(parents=True, exist_ok=True)
     return outdir
-
 
 def _validate_seeds(seeds: Sequence[int]) -> None:
     if not isinstance(seeds, Sequence) or len(seeds) == 0:
@@ -64,7 +72,6 @@ def _validate_seeds(seeds: Sequence[int]) -> None:
     for seed in seeds:
         if not isinstance(seed, int):
             raise TypeError(f"Each seed must be an integer, but received {type(seed).__name__}.")
-
 
 def _validate_conditions(conditions: Sequence[Dict[str, Any]]) -> None:
     if not isinstance(conditions, Sequence) or len(conditions) == 0:
@@ -78,7 +85,6 @@ def _validate_conditions(conditions: Sequence[Dict[str, Any]]) -> None:
         missing = required - set(condition.keys())
         if missing:
             raise KeyError(f"conditions[{i}] is missing required key(s): {sorted(missing)}.")
-
 
 def _make_run_output_dir(
     base_output_dir: Path,
@@ -99,7 +105,6 @@ def _make_run_output_dir(
         outdir.mkdir(parents=True, exist_ok=True)
 
     return outdir
-
 
 def _results_to_summary_row(results, condition_name: Optional[str] = None, condition_index: Optional[int] = None) -> Dict[str, Any]:
     final_avg_emotion = None
@@ -123,11 +128,7 @@ def _results_to_summary_row(results, condition_name: Optional[str] = None, condi
         "num_interventions": len(results.intervention_timesteps),
         "intervention_timesteps": results.intervention_timesteps,
         "total_interactions": sum(results.interactions_per_timestep),
-        "mean_interactions_per_timestep": (
-            sum(results.interactions_per_timestep) / len(results.interactions_per_timestep)
-            if results.interactions_per_timestep
-            else 0.0
-        ),
+        "mean_interactions_per_timestep": (sum(results.interactions_per_timestep) / len(results.interactions_per_timestep) if results.interactions_per_timestep else 0.0),
         "final_avg_member_emotion": final_avg_emotion,
         "final_min_member_emotion": min(final_member_emotions) if final_member_emotions else None,
         "final_max_member_emotion": max(final_member_emotions) if final_member_emotions else None,
@@ -136,22 +137,18 @@ def _results_to_summary_row(results, condition_name: Optional[str] = None, condi
         "leader_emotion_management_ability": leader.get("emotionManagementAbility"),
     }
 
-
 def save_simulation_result(results, filepath: Path) -> None:
     with filepath.open("wb") as f:
         pickle.dump(results, f)
-
 
 def save_run_metadata_json(metadata: Dict[str, Any], filepath: Path) -> None:
     with filepath.open("w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2, default=str)
 
-
 def save_summary_table(summary_rows: List[Dict[str, Any]], filepath: Path) -> pd.DataFrame:
     df = pd.DataFrame(summary_rows)
     df.to_csv(filepath, index=False)
     return df
-
 
 def build_conditions_from_grid(
     grid: Dict[str, Sequence[Any]],
@@ -186,7 +183,6 @@ def build_conditions_from_grid(
         conditions.append(condition)
 
     return conditions
-
 
 def _build_single_condition_from_arguments(
     population_size: Optional[int],
@@ -254,7 +250,6 @@ def _build_single_condition_from_arguments(
         "dampening": dampening,
     }
 
-
 def _build_run_metadata(
     results,
     condition: Dict[str, Any],
@@ -277,6 +272,92 @@ def _build_run_metadata(
         "intervention_timesteps": results.intervention_timesteps,
     }
 
+def _format_condition_note(condition: Dict[str, Any], index: int) -> List[str]:
+    lines: List[str] = []
+
+    population_size = condition.get("population_size")
+    n_members = population_size - 1 if isinstance(population_size, int) else "unknown"
+
+    lines.append(f"Condition {index}: {condition.get('condition_name', f'condition_{index}')}")
+    lines.append(f"  Structure: {condition.get('structure')}")
+    lines.append(f"  Leader style: {condition.get('leader_style')}")
+    lines.append(f"  Population size: {population_size}")
+    lines.append("  Number of leaders: 1")
+    lines.append(f"  Number of members: {n_members}")
+    lines.append(f"  Max iterations: {condition.get('max_iterations')}")
+
+    structure = condition.get("structure")
+
+    if structure == "random":
+        lines.append("  Structure details:")
+        lines.append(f"    Random tie strength: {condition.get('strength')}")
+
+    elif structure == "community":
+        lines.append("  Structure details:")
+        lines.append(f"    Number of communities: {condition.get('n_communities')}")
+        lines.append(f"    Intra-community strength: {condition.get('intra_strength')}")
+        lines.append(f"    Inter-community strength: {condition.get('inter_strength')}")
+
+    elif structure == "core_periphery":
+        lines.append("  Structure details:")
+        lines.append(f"    Number of peripheral members: {condition.get('n_periphery')}")
+        lines.append(f"    Core-to-periphery strength: {condition.get('core_to_periph')}")
+        lines.append(f"    Periphery-to-core strength: {condition.get('periph_to_core')}")
+        lines.append(f"    Periphery-to-periphery strength: {condition.get('periph_to_periph')}")
+
+    if condition.get("adaptive_intimacy", False):
+        lines.append("  Adaptive intimacy: True")
+        lines.append(f"    kappa: {condition.get('kappa')}")
+        lines.append(f"    decay: {condition.get('decay')}")
+        lines.append(f"    min_w: {condition.get('min_w')}")
+        lines.append(f"    max_w: {condition.get('max_w')}")
+    else:
+        lines.append("  Adaptive intimacy: False")
+
+    lines.append(f"  Dampening: {condition.get('dampening')}")
+    lines.append("")
+
+    return lines
+
+def write_batch_note(
+    output_dir: Path,
+    conditions_to_run: Sequence[Dict[str, Any]],
+    seeds: Sequence[int],
+) -> None:
+    """
+    Write a human-readable note describing the batch.
+    """
+    lines: List[str] = []
+
+    lines.append("Emotion Contagion ABM Batch Note")
+    lines.append("=" * 60)
+    lines.append(f"Batch folder: {output_dir}")
+    lines.append(f"Number of conditions: {len(conditions_to_run)}")
+    lines.append(f"Number of repetitions: {len(seeds)}")
+    lines.append(f"Seeds: {list(seeds)}")
+    lines.append("")
+
+    if conditions_to_run:
+        population_sizes = sorted({c.get("population_size") for c in conditions_to_run})
+        max_iterations = sorted({c.get("max_iterations") for c in conditions_to_run})
+        leader_styles = sorted({c.get("leader_style") for c in conditions_to_run})
+        structures = sorted({c.get("structure") for c in conditions_to_run})
+
+        lines.append("Batch summary")
+        lines.append("-" * 60)
+        lines.append(f"Population sizes tested: {population_sizes}")
+        lines.append(f"Simulation lengths tested: {max_iterations}")
+        lines.append(f"Leader styles tested: {leader_styles}")
+        lines.append(f"Network structures tested: {structures}")
+        lines.append("")
+
+        lines.append("Condition details")
+        lines.append("-" * 60)
+        for i, condition in enumerate(conditions_to_run, start=1):
+            lines.extend(_format_condition_note(condition, i))
+
+    note_path = output_dir / "note.txt"
+    note_path.write_text("\n".join(lines), encoding="utf-8")
 
 def run_multiple_simulations(
     seeds: Sequence[int],
@@ -341,11 +422,7 @@ def run_multiple_simulations(
         raise ValueError("Provide either conditions or condition_grid, not both.")
 
     if condition_grid is not None:
-        conditions_to_run = build_conditions_from_grid(
-            grid=condition_grid,
-            fixed_params=fixed_params,
-            condition_name_keys=condition_name_keys,
-        )
+        conditions_to_run = build_conditions_from_grid(grid=condition_grid, fixed_params=fixed_params, condition_name_keys=condition_name_keys)
     elif conditions is not None:
         _validate_conditions(conditions)
         conditions_to_run = [dict(condition) for condition in conditions]
@@ -388,6 +465,8 @@ def run_multiple_simulations(
         create_subfolders=create_subfolders,
         add_timestamp_to_output_dir=add_timestamp_to_output_dir,
     )
+
+    write_batch_note(output_dir=output_dir, conditions_to_run=conditions_to_run, seeds=seeds,)
 
     all_results = []
     summary_rows = []

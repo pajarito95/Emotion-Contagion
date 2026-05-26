@@ -1,0 +1,138 @@
+Emotion Contagion ABM Batch Note
+============================================================
+Batch folder: \\lightning.bu.binghamton.edu\WISE\sescott1\Masters\523\Emotion-Contagion\BigProject\outputs\2026-05-26_18-15-06
+Number of conditions: 9
+Number of repetitions: 20
+Seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+Batch summary
+------------------------------------------------------------
+Population sizes tested: [11]
+Simulation lengths tested: [235]
+Leader styles tested: ['High_Initially_Constrained', 'Low_Initially_Constrained', 'No_Intervention']
+Network structures tested: ['community', 'core_periphery', 'random']
+
+Condition details
+------------------------------------------------------------
+Condition 1: structure_random__leader_style_No_Intervention
+  Structure: random
+  Leader style: No_Intervention
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Random tie strength: 0.5
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 2: structure_random__leader_style_High_Initially_Constrained
+  Structure: random
+  Leader style: High_Initially_Constrained
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Random tie strength: 0.5
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 3: structure_random__leader_style_Low_Initially_Constrained
+  Structure: random
+  Leader style: Low_Initially_Constrained
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Random tie strength: 0.5
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 4: structure_community__leader_style_No_Intervention
+  Structure: community
+  Leader style: No_Intervention
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Number of communities: 2
+    Intra-community strength: 0.5
+    Inter-community strength: 0.2
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 5: structure_community__leader_style_High_Initially_Constrained
+  Structure: community
+  Leader style: High_Initially_Constrained
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Number of communities: 2
+    Intra-community strength: 0.5
+    Inter-community strength: 0.2
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 6: structure_community__leader_style_Low_Initially_Constrained
+  Structure: community
+  Leader style: Low_Initially_Constrained
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Number of communities: 2
+    Intra-community strength: 0.5
+    Inter-community strength: 0.2
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 7: structure_core_periphery__leader_style_No_Intervention
+  Structure: core_periphery
+  Leader style: No_Intervention
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Number of peripheral members: 10
+    Core-to-periphery strength: 0.5
+    Periphery-to-core strength: 0.2
+    Periphery-to-periphery strength: 0.2
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 8: structure_core_periphery__leader_style_High_Initially_Constrained
+  Structure: core_periphery
+  Leader style: High_Initially_Constrained
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Number of peripheral members: 10
+    Core-to-periphery strength: 0.5
+    Periphery-to-core strength: 0.2
+    Periphery-to-periphery strength: 0.2
+  Adaptive intimacy: False
+  Dampening: 0.08
+
+Condition 9: structure_core_periphery__leader_style_Low_Initially_Constrained
+  Structure: core_periphery
+  Leader style: Low_Initially_Constrained
+  Population size: 11
+  Number of leaders: 1
+  Number of members: 10
+  Max iterations: 235
+  Structure details:
+    Number of peripheral members: 10
+    Core-to-periphery strength: 0.5
+    Periphery-to-core strength: 0.2
+    Periphery-to-periphery strength: 0.2
+  Adaptive intimacy: False
+  Dampening: 0.08

@@ -13,7 +13,7 @@ output:
   summary_filename: summary.csv
   results_filename_template: simulation_result_run_{run_id}.pkl
   metadata_filename_template: simulation_result_run_{run_id}_metadata.json
-  make_sentiment_plots: true
+  make_sentiment_plots: false
 
 seed_spec:
   start: 0
@@ -24,7 +24,7 @@ single_condition:
   population_size: 11
   structure: random
   leader_style: High_Initially_Constrained
-  max_iterations: 50
+  max_iterations: 235
   min_weight: 0.01
   include_leader_ties: true
   leader_to_member_cap: null
@@ -51,7 +51,7 @@ manual_conditions:
     population_size: 11
     structure: community
     leader_style: High_Initially_Constrained
-    max_iterations: 50
+    max_iterations: 235
     min_weight: 0.01
     include_leader_ties: true
     leader_to_member_cap: null
@@ -77,7 +77,7 @@ manual_conditions:
     population_size: 11
     structure: random
     leader_style: No_Intervention
-    max_iterations: 50
+    max_iterations: 235
     min_weight: 0.01
     include_leader_ties: true
     leader_to_member_cap: null
@@ -103,7 +103,7 @@ manual_conditions:
     population_size: 11
     structure: core_periphery
     leader_style: Low_Initially_Constrained
-    max_iterations: 50
+    max_iterations: 235
     min_weight: 0.01
     include_leader_ties: true
     leader_to_member_cap: null
@@ -129,7 +129,7 @@ grid:
   condition_name_keys: [structure, leader_style]
   fixed_params:
     population_size: 11
-    max_iterations: 50
+    max_iterations: 235
     min_weight: 0.01
     include_leader_ties: true
     leader_to_member_cap: null
