@@ -82,7 +82,7 @@ def update_intimacy_matrix(
     decay: float,
     min_w: float,
     max_w: float,
-    eps: float = 1e-12,
+    eps: float = 1e-9,
 ) -> np.ndarray:
     """
     Adapt member-member intimacy weights based on emotional similarity.

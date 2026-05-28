@@ -92,9 +92,7 @@ def build_initial_intimacy_matrix(
     """
     Build one unified intimacy matrix over all agents.
 
-    Base matrix generation is delegated to network.py, then optionally
-    leader-related ties are overwritten to make leader-member ties distinct
-    from member-member ties.
+    Base matrix generation is delegated to network.py, then optionally leader-related ties are overwritten to make leader-member ties distinct from member-member ties.
     """
     intimacy_matrix, assignments = create_intimacy_matrix(
         rng=rng,

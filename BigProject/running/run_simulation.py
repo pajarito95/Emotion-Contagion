@@ -20,15 +20,8 @@ import pandas as pd
 import numpy as np
 
 from build_simulation import initialize_simulation
-from member_dynamics import (
-    avgEmotion,
-    agent_interaction,
-    update_intimacy_matrix,
-)
-from leader_intervention import (
-    run_leader_intervention,
-    summarize_leader_intervention,
-)
+from member_dynamics import (avgEmotion, agent_interaction, update_intimacy_matrix)
+from leader_intervention import (run_leader_intervention, summarize_leader_intervention)
 
 from rl_q import (
     RL_ACTIONS,
@@ -45,7 +38,6 @@ class SimulationResults:
     """
     Container for outputs from one simulation run.
     """
-
     run_id: Any
     seed: int
     state: Any
@@ -64,7 +56,7 @@ class SimulationResults:
     absorption_history: List[Dict[Tuple[int, int], float]]
     final_absorption_dict: Dict[Tuple[int, int], float]
 
-    intimacy_history: List[np.ndarray]
+    intimacy_matrix_history: List[np.ndarray]
 
     rl_actions: List[int]
     rl_rewards: List[float]
@@ -127,14 +119,10 @@ def _compute_homophily_index(
     """
     Scalar homophily metric.
 
-    Higher value =>
-    stronger weighting toward emotionally similar agents.
+    Higher value => stronger weighting toward emotionally similar agents.
     """
 
-    member_indices = [
-        i for i, a in enumerate(agents)
-        if i != leader_index and a.get("role") == "member"
-    ]
+    member_indices = [i for i, a in enumerate(agents) if i != leader_index and a.get("role") == "member"]
 
     emos = np.array([agents[i]["emotion"] for i in member_indices])
 
@@ -161,6 +149,7 @@ def _compute_homophily_index(
             else:
                 dissimilar_weights.append(w)
 
+    # TODO: Consider different apprach
     if len(similar_weights) == 0 or len(dissimilar_weights) == 0:
         return 0.0
 
@@ -279,7 +268,7 @@ def run_simulation(
     absorption_history: List[Dict[Tuple[int, int], float]] = []
     absorption_dict: Dict[Tuple[int, int], float] = {}
 
-    intimacy_history: List[np.ndarray] = []
+    intimacy_matrix_history: List[np.ndarray] = []
 
     rl_actions: List[int] = []
     rl_rewards: List[float] = []
@@ -316,7 +305,7 @@ def run_simulation(
     leader_intervened = False
 
     time = 0
-
+    intimacy_matrix_history.append(state.intimacy_matrix.copy())
     while time < max_iterations:
 
         done = (time == max_iterations - 1)
@@ -436,9 +425,7 @@ def run_simulation(
                 max_w=max_w,
             )
 
-            intimacy_history.append(
-                state.intimacy_matrix.copy()
-            )
+            intimacy_matrix_history.append(state.intimacy_matrix.copy())
 
         # ==========================================================
         # HOMOPHILY
@@ -537,7 +524,7 @@ def run_simulation(
         intervention_log=intervention_log,
         absorption_history=absorption_history,
         final_absorption_dict=absorption_dict,
-        intimacy_history=intimacy_history,
+        intimacy_matrix_history=intimacy_matrix_history,
         rl_actions=rl_actions,
         rl_rewards=rl_rewards,
         rl_quality=rl_quality,

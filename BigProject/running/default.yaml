@@ -91,10 +91,10 @@ single_condition:
 
   # adaptive intimacy
   adaptive_intimacy: false
-  kappa: null
-  decay: null
-  min_w: null
-  max_w: null
+  kappa: 0.08
+  decay: 0.01 
+  min_w: 0.002
+  max_w: 1.0
 
   # leader intervention
   dampening: 0.08
@@ -142,11 +142,11 @@ manual_conditions:
 
     # adaptive intimacy
     adaptive_intimacy: false
-    kappa: null
-    decay: null
-    min_w: null
-    max_w: null
-
+    kappa: 0.08
+    decay: 0.01 
+    min_w: 0.002
+    min_w: 1.0
+  
     # leader intervention
     dampening: 0.08
 
@@ -187,10 +187,10 @@ manual_conditions:
 
     # adaptive intimacy
     adaptive_intimacy: false
-    kappa: null
-    decay: null
-    min_w: null
-    max_w: null
+    kappa: 0.08
+    decay: 0.01 
+    min_w: 0.002
+    min_w: 1.0
 
     # leader intervention
     dampening: 0.08
@@ -232,10 +232,10 @@ manual_conditions:
 
     # adaptive intimacy
     adaptive_intimacy: false
-    kappa: null
-    decay: null
-    min_w: null
-    max_w: null
+    kappa: 0.08
+    decay: 0.01 
+    min_w: 0.002
+    min_w: 1.0
 
     # leader intervention
     dampening: 0.08
@@ -271,10 +271,10 @@ grid:
 
     # adaptive intimacy
     adaptive_intimacy: true
-    kappa: null
-    decay: null
-    min_w: null
-    max_w: null
+    kappa: 0.08
+    decay: 0.01
+    min_w: 0.01
+    max_w: 1.0
 
     # leader intervention
     dampening: 0.08
