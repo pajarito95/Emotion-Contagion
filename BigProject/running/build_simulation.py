@@ -23,7 +23,7 @@ from simulation_state import SimulationState
 
 
 VALID_STRUCTURES = {"random", "community", "core_periphery"}
-VALID_STYLES = {"No_Intervention", "High_Initially_Constrained", "Low_Initially_Constrained"}
+VALID_STYLES = {"No_Intervention", "High_Initially_Constrained", "Low_Initially_Constrained", "High_Fully_Constrained", "Low_Fully_Constrained", "Free"}
 
 
 def validate_population_size(population_size: int) -> None:
