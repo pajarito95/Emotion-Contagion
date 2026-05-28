@@ -1,5 +1,5 @@
 """
-Build the initial state of the emotion contagion simulation.
+Build initial state of the emotion contagion simulation.
 
 Current design assumptions:
 - All agents, including the leader, are stored in one shared `agents` list.
@@ -8,13 +8,11 @@ Current design assumptions:
 - Agents are labeled with role = "leader" or role = "member".
 - For now, regular contagion updates are applied only to members.
 - Leader intervention is handled separately in leader_intervention.py.
-- RL is not included here yet.
+- RL is included.
 """
 
 from __future__ import annotations
-
 from typing import Optional
-
 import numpy as np
 
 from agents import make_agents, configure_leader
@@ -25,23 +23,19 @@ from simulation_state import SimulationState
 VALID_STRUCTURES = {"random", "community", "core_periphery"}
 VALID_STYLES = {"No_Intervention", "High_Initially_Constrained", "Low_Initially_Constrained", "High_Fully_Constrained", "Low_Fully_Constrained", "Free"}
 
-
 def validate_population_size(population_size: int) -> None:
     if not isinstance(population_size, int):
         raise TypeError(f"population_size must be an integer. Received instead: {type(population_size).__name__}.")
     if population_size < 2:
         raise ValueError("population_size must be at least 2 so there is one leader and at least one member.")
 
-
 def validate_structure(structure: str) -> None:
     if structure not in VALID_STRUCTURES:
         raise ValueError(f"Invalid structure {structure!r}. Choose from: {sorted(VALID_STRUCTURES)}.")
 
-
 def validate_style(style: str) -> None:
     if style not in VALID_STYLES:
         raise ValueError(f"Invalid leader style {style!r}. Choose from: {sorted(VALID_STYLES)}.")
-
 
 def assign_indices_and_roles(agents: list[dict], leader_index: int) -> list[dict]:
     for idx, agent in enumerate(agents):
@@ -49,12 +43,7 @@ def assign_indices_and_roles(agents: list[dict], leader_index: int) -> list[dict
         agent["role"] = "leader" if idx == leader_index else "member"
     return agents
 
-
-def select_and_configure_leader(
-    rng: np.random.Generator,
-    agents: list[dict],
-    leader_style: str,
-) -> tuple[list[dict], int]:
+def select_and_configure_leader(rng: np.random.Generator, agents: list[dict], leader_style: str) -> tuple[list[dict], int]:
     leader_index = int(rng.integers(0, len(agents)))
     leader = agents[leader_index]
 
@@ -67,7 +56,6 @@ def select_and_configure_leader(
     agents[leader_index] = leader
 
     return agents, leader_index
-
 
 def build_initial_intimacy_matrix(
     rng: np.random.Generator,
@@ -90,8 +78,7 @@ def build_initial_intimacy_matrix(
     periph_to_periph: Optional[float] = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Build one unified intimacy matrix over all agents.
-
+    Build one unified intimacy matrix over all agents. 
     Base matrix generation is delegated to network.py, then optionally leader-related ties are overwritten to make leader-member ties distinct from member-member ties.
     """
     intimacy_matrix, assignments = create_intimacy_matrix(
@@ -149,7 +136,6 @@ def build_initial_intimacy_matrix(
     intimacy_matrix = intimacy_matrix / row_sums
     return intimacy_matrix, assignments
 
-
 def initialize_simulation(
     rng: np.random.Generator,
     population_size: int,
@@ -171,7 +157,7 @@ def initialize_simulation(
     periph_to_periph: Optional[float] = None,
 ) -> SimulationState:
     """
-    Create the full initial simulation state.
+    Create full initial simulation state.
 
     Structure-specific parameters:
     - random: strength
@@ -187,16 +173,8 @@ def initialize_simulation(
     if len(agents) != population_size:
         raise ValueError(f"make_agents returned {len(agents)} agents, but population_size={population_size} was requested.")
 
-    agents, leader_index = select_and_configure_leader(
-        rng=rng,
-        agents=agents,
-        leader_style=leader_style,
-    )
-
-    agents = assign_indices_and_roles(
-        agents=agents,
-        leader_index=leader_index,
-    )
+    agents, leader_index = select_and_configure_leader(rng=rng, agents=agents, leader_style=leader_style)
+    agents = assign_indices_and_roles(agents=agents, leader_index=leader_index)
 
     intimacy_matrix, assignments = build_initial_intimacy_matrix(
         rng=rng,
@@ -238,11 +216,4 @@ def initialize_simulation(
         "periph_to_periph": periph_to_periph,
     }
 
-    return SimulationState(
-        agents=agents,
-        leader_index=leader_index,
-        intimacy_matrix=intimacy_matrix,
-        assignments=assignments,
-        time=0,
-        metadata=metadata,
-    )
+    return SimulationState(agents=agents, leader_index=leader_index, intimacy_matrix=intimacy_matrix, assignments=assignments, time=0, metadata=metadata)

@@ -56,13 +56,11 @@ def _validate_common_inputs(
     if not (0 <= leader_index < population):
         raise ValueError(f"leader_index={leader_index} is out of bounds for population={population}.")
 
-
 def _validate_strength(value: float, name: str) -> None:
     if not isinstance(value, (int, float)):
         raise TypeError(f"{name} must be numeric, but received {type(value).__name__}.")
     if not (0 <= value <= 1):
         raise ValueError(f"{name} must be between 0 and 1, but received {value}.")
-
 
 def _normalize_rows(matrix: np.ndarray) -> np.ndarray:
     row_sums = matrix.sum(axis=1, keepdims=True)
@@ -70,23 +68,16 @@ def _normalize_rows(matrix: np.ndarray) -> np.ndarray:
         raise ValueError("At least one row of the intimacy matrix has zero sum before normalization. Increase tie weights or avoid zeroing an entire row.")
     return matrix / row_sums
 
-
 def _sample_weight(rng: np.random.Generator, upper_bound: float, min_weight: float) -> float:
     if upper_bound < min_weight:
         raise ValueError(f"Upper bound {upper_bound} is smaller than min_weight {min_weight}. Either increase the upper bound or decrease min_weight.")
     return float(rng.uniform(min_weight, upper_bound))
 
-
-def _community_assignments(
-    rng: np.random.Generator,
-    population: int,
-    n_communities: int,
-) -> np.ndarray:
+def _community_assignments(rng: np.random.Generator, population: int, n_communities: int) -> np.ndarray:
     """
     Create assignments for a community structure over the full population.
 
-    Returns an integer array of length population with labels in
-    {0, ..., n_communities - 1}.
+    Returns an integer array of length population with labels in {0, ..., n_communities - 1}.
     """
     if not isinstance(n_communities, int):
         raise TypeError(f"n_communities must be an integer, but received {type(n_communities).__name__}.")
@@ -110,12 +101,7 @@ def _community_assignments(
 
     return assignments
 
-
-def _core_periphery_assignments(
-    population: int,
-    leader_index: int,
-    n_periphery: int,
-) -> np.ndarray:
+def _core_periphery_assignments(population: int, leader_index: int, n_periphery: int) -> np.ndarray:
     """
     Create core-periphery assignments with the leader fixed as the only core.
 
@@ -142,7 +128,6 @@ def _core_periphery_assignments(
 
     return assignments
 
-
 def create_intimacy_matrix(
     rng: np.random.Generator,
     population: int,
@@ -161,61 +146,51 @@ def create_intimacy_matrix(
     """
     Create an asymmetric, row-normalized intimacy matrix over all agents.
 
-    Parameters
-    ----------
-    rng : np.random.Generator
-        Random number generator.
-    population : int
-        Total number of agents, including the leader.
-    structure : str
-        One of: "random", "community", "core_periphery".
-    min_weight : float, optional
-        Minimum raw tie weight before normalization.
-    leader_index : int
-        Index of the leader in the shared population list.
+    Parameters:
+        rng : np.random.Generator
+            Random number generator.
+        population : int
+            Total number of agents, including the leader.
+        structure : str
+            One of: "random", "community", "core_periphery".
+        min_weight : float, optional
+            Minimum raw tie weight before normalization.
+        leader_index : int
+            Index of the leader in the shared population list.
 
-    Random-specific parameters
-    --------------------------
-    strength : float
-        Single upper bound used for all off-diagonal ties.
+    Random-specific parameters:
+        strength : float
+            Single upper bound used for all off-diagonal ties.
 
-    Community-specific parameters
-    -----------------------------
-    n_communities : int
-        Number of communities to generate.
-    intra_strength : float
-        Upper bound for within-community ties.
-    inter_strength : float
-        Upper bound for between-community ties.
+    Community-specific parameters:
+        n_communities : int
+            Number of communities to generate.
+        intra_strength : float
+            Upper bound for within-community ties.
+        inter_strength : float
+            Upper bound for between-community ties.
 
-    Core-periphery-specific parameters
-    ----------------------------------
-    n_periphery : int
-        Number of peripheral agents. Under the current design this must equal
-        the number of non-leader agents.
-    core_to_periph : float
-        Upper bound for leader/core -> periphery ties.
-    periph_to_core : float
-        Upper bound for periphery -> leader/core ties.
-    periph_to_periph : float
-        Upper bound for periphery -> periphery ties.
+    Core-periphery-specific parameters:
+        n_periphery : int
+            Number of peripheral agents. Under the current design this must equal
+            the number of non-leader agents.
+        core_to_periph : float
+            Upper bound for leader/core -> periphery ties.
+        periph_to_core : float
+            Upper bound for periphery -> leader/core ties.
+        periph_to_periph : float
+            Upper bound for periphery -> periphery ties.
 
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray]
-        intimacy_matrix : np.ndarray
-            Full NxN directed, row-normalized intimacy matrix.
-        assignments : np.ndarray
-            Structure assignments.
-            - random/community: integer community labels
-            - core_periphery: 1 = core, 0 = periphery
+    Returns:
+        tuple[np.ndarray, np.ndarray]
+            intimacy_matrix : np.ndarray
+                Full NxN directed, row-normalized intimacy matrix.
+            assignments : np.ndarray
+                Structure assignments.
+                - random/community: integer community labels
+                - core_periphery: 1 = core, 0 = periphery
     """
-    _validate_common_inputs(
-        population=population,
-        structure=structure,
-        min_weight=min_weight,
-        leader_index=leader_index,
-    )
+    _validate_common_inputs(population=population, structure=structure, min_weight=min_weight, leader_index=leader_index)
 
     W = np.zeros((population, population), dtype=float)
 
@@ -246,17 +221,12 @@ def create_intimacy_matrix(
         _validate_strength(intra_strength, "intra_strength")
         _validate_strength(inter_strength, "inter_strength")
 
-        assignments = _community_assignments(
-            rng=rng,
-            population=population,
-            n_communities=n_communities,
-        )
+        assignments = _community_assignments(rng=rng, population=population, n_communities=n_communities,)
 
         for i in range(population):
             for j in range(population):
                 if i == j:
                     continue
-
                 upper = intra_strength if assignments[i] == assignments[j] else inter_strength
                 W[i, j] = _sample_weight(rng=rng, upper_bound=upper, min_weight=min_weight)
 
@@ -277,11 +247,7 @@ def create_intimacy_matrix(
         _validate_strength(periph_to_core, "periph_to_core")
         _validate_strength(periph_to_periph, "periph_to_periph")
 
-        assignments = _core_periphery_assignments(
-            population=population,
-            leader_index=leader_index,
-            n_periphery=n_periphery,
-        )
+        assignments = _core_periphery_assignments( population=population, leader_index=leader_index, n_periphery=n_periphery,)
 
         for i in range(population):
             for j in range(population):

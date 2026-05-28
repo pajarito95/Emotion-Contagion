@@ -12,56 +12,32 @@ Current design assumptions:
 """
 
 from __future__ import annotations
-
 from typing import Dict, List, Tuple, Optional
-
 import numpy as np
 
+VALID_STYLES = {"No_Intervention", "High_Fully_Constrained", "Low_Fully_Constrained", "High_Initially_Constrained", "Low_Initially_Constrained", "Free"}
 
-VALID_STYLES = {
-    "No_Intervention",
-    "High_Fully_Constrained",
-    "Low_Fully_Constrained",
-    "High_Initially_Constrained",
-    "Low_Initially_Constrained",
-    "Free",
-}
-
-
-# =========================================================
 # Validation
-# =========================================================
-
 def validate_leader_style(style: str) -> None:
     """
-    Validate that the provided leader style is currently supported.
+    Validate that the provided leader style is currently supported
     """
     if style not in VALID_STYLES:
-        raise ValueError(
-            f"Unsupported leader style: {style!r}. "
-            f"Supported styles are: {sorted(VALID_STYLES)}."
-        )
-
+        raise ValueError(f"Unsupported leader style: {style!r}. Supported styles are: {sorted(VALID_STYLES)}.")
 
 def validate_agents(agents: List[dict]) -> None:
     """
     Validate that agents is a non-empty list of dictionaries.
     """
     if not isinstance(agents, list):
-        raise TypeError(
-            f"agents must be a list, but received {type(agents).__name__}."
-        )
+        raise TypeError(f"agents must be a list, but received {type(agents).__name__}.")
 
     if len(agents) == 0:
         raise ValueError("agents cannot be empty.")
 
     for i, agent in enumerate(agents):
         if not isinstance(agent, dict):
-            raise TypeError(
-                f"agents[{i}] must be a dictionary, "
-                f"but received {type(agent).__name__}."
-            )
-
+            raise TypeError(f"agents[{i}] must be a dictionary, but received {type(agent).__name__}.")
 
 def validate_leader_index(agents: List[dict], leader_index: int) -> None:
     """
@@ -70,72 +46,41 @@ def validate_leader_index(agents: List[dict], leader_index: int) -> None:
     validate_agents(agents)
 
     if not isinstance(leader_index, int):
-        raise TypeError(
-            f"leader_index must be an integer, "
-            f"but received {type(leader_index).__name__}."
-        )
+        raise TypeError(f"leader_index must be an integer, but received {type(leader_index).__name__}.")
 
     if not (0 <= leader_index < len(agents)):
-        raise ValueError(
-            f"leader_index={leader_index} is out of bounds "
-            f"for {len(agents)} agents."
-        )
+        raise ValueError(f"leader_index={leader_index} is out of bounds for {len(agents)} agents.")
 
     if agents[leader_index].get("role") != "leader":
-        raise ValueError(
-            f"Agent at leader_index={leader_index} must have role='leader', "
-            f"but found role={agents[leader_index].get('role')!r}."
-        )
+        raise ValueError(f"Agent at leader_index={leader_index} must have role='leader', but found role={agents[leader_index].get('role')!r}.")
 
-
-def validate_intimacy_matrix(
-    intimacy_matrix: np.ndarray,
-    agents: List[dict],
-) -> None:
+def validate_intimacy_matrix(intimacy_matrix: np.ndarray, agents: List[dict]) -> None:
     """
-    Validate intimacy matrix dimensions.
+    Validate intimacy matrix dimensions
     """
     if not isinstance(intimacy_matrix, np.ndarray):
         raise TypeError("intimacy_matrix must be a NumPy array.")
 
     if intimacy_matrix.ndim != 2:
-        raise ValueError(
-            f"intimacy_matrix must be 2D, "
-            f"but received shape {intimacy_matrix.shape}."
-        )
+        raise ValueError(f"intimacy_matrix must be 2D, but received shape {intimacy_matrix.shape}.")
 
     n_agents = len(agents)
 
     if intimacy_matrix.shape != (n_agents, n_agents):
-        raise ValueError(
-            f"intimacy_matrix shape {intimacy_matrix.shape} "
-            f"does not match required shape ({n_agents}, {n_agents})."
-        )
+        raise ValueError(f"intimacy_matrix shape {intimacy_matrix.shape} does not match required shape ({n_agents}, {n_agents}).")
 
-
-# =========================================================
 # Helpers
-# =========================================================
-
-def get_member_indices(
-    agents: List[dict],
-    leader_index: int,
-) -> List[int]:
+def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
     """
-    Return all non-leader member indices.
+    Return all non-leader member indices
     """
     validate_leader_index(agents, leader_index)
 
-    return [
-        i
-        for i, agent in enumerate(agents)
-        if i != leader_index and agent.get("role") == "member"
-    ]
-
+    return [i for i, agent in enumerate(agents) if i != leader_index and agent.get("role") == "member"]
 
 def get_threshold_mode(style: str) -> str:
     """
-    Map leader style to threshold mode.
+    Map leader style to threshold mode
 
     Modes:
     - "never"  -> never constrained
@@ -154,7 +99,6 @@ def get_threshold_mode(style: str) -> str:
     }
 
     return mapping[style]
-
 
 def should_leader_intervene(
     style: str,
@@ -175,21 +119,16 @@ def should_leader_intervene(
     validate_leader_style(style)
 
     if not isinstance(leader, dict):
-        raise TypeError(
-            f"leader must be a dictionary, "
-            f"but received {type(leader).__name__}."
-        )
+        raise TypeError(f"leader must be a dictionary, but received {type(leader).__name__}.")
 
     if style == "No_Intervention":
         return False
 
     threshold_mode = get_threshold_mode(style)
-
     if threshold_mode == "never":
         return True
 
     threshold = leader.get("interventionThreshold", None)
-
     if threshold is None:
         return False
 
@@ -203,11 +142,7 @@ def should_leader_intervene(
 
     return False
 
-
-# =========================================================
 # Intervention application
-# =========================================================
-
 def apply_leader_intervention(
     agents: List[dict],
     leader_index: int,
@@ -219,75 +154,41 @@ def apply_leader_intervention(
     """
     Apply a leader intervention to member agents.
 
-    Each member is pulled toward the leader's emotion:
-
-        dampening
-        * (leader_emotion - member_emotion)
-        * member_delta
-        * intimacy_matrix[leader_index, member_index]
+    Each member is pulled toward the leader's emotion: 
+        dampening * (leader_emotion - member_emotion) * member_delta * intimacy_matrix[leader_index, member_index]
     """
     validate_leader_index(agents, leader_index)
     validate_intimacy_matrix(intimacy_matrix, agents)
 
     if dampening < 0:
-        raise ValueError(
-            f"dampening must be nonnegative, but received {dampening}."
-        )
+        raise ValueError(f"dampening must be nonnegative, but received {dampening}.")
 
     if clip_min >= clip_max:
-        raise ValueError(
-            f"clip_min must be less than clip_max, "
-            f"but received clip_min={clip_min} "
-            f"and clip_max={clip_max}."
-        )
+        raise ValueError(f"clip_min must be less than clip_max, but received clip_min={clip_min} and clip_max={clip_max}.")
 
     leader = agents[leader_index]
-    member_indices = get_member_indices(agents, leader_index)
-
     if "emotion" not in leader:
         raise KeyError("Leader must contain key 'emotion'.")
 
+    member_indices = get_member_indices(agents, leader_index)
     for member_index in member_indices:
         member = agents[member_index]
 
         required_keys = {"emotion", "delta", "index", "role"}
         missing = required_keys - set(member.keys())
-
         if missing:
-            raise KeyError(
-                f"Member agent at index {member_index} "
-                f"is missing required keys: {sorted(missing)}."
-            )
+            raise KeyError(f"Member agent at index {member_index} is missing required keys: {sorted(missing)}.")
 
         if member["index"] != member_index:
-            raise ValueError(
-                f"Member at list position {member_index} "
-                f"has index={member['index']} "
-                f"but expected {member_index}."
-            )
+            raise ValueError(f"Member at list position {member_index} has index={member['index']} but expected {member_index}.")
 
-        influence_weight = float(
-            intimacy_matrix[leader_index, member_index]
-        )
-
-        member["emotion"] += (
-            dampening
-            * (leader["emotion"] - member["emotion"])
-            * member["delta"]
-            * influence_weight
-        )
-
-        member["emotion"] = float(
-            np.clip(member["emotion"], clip_min, clip_max)
-        )
+        influence_weight = float(intimacy_matrix[leader_index, member_index])
+        member["emotion"] += (dampening * (leader["emotion"] - member["emotion"]) * member["delta"] * influence_weight)
+        member["emotion"] = float(np.clip(member["emotion"], clip_min, clip_max))
 
     return agents
 
-
-# =========================================================
 # Main intervention interface
-# =========================================================
-
 def run_leader_intervention(
     style: str,
     avg_emotional_valence: float,
@@ -301,16 +202,15 @@ def run_leader_intervention(
     leader_has_intervened: bool = False,
 ) -> Tuple[List[dict], bool]:
     """
-    Main leader intervention interface.
+    Main leader intervention interface
 
     Two modes:
+        1. Threshold mode (legacy behavior)
+        - Uses should_leader_intervene()
 
-    1. Threshold mode (legacy behavior)
-       - Uses should_leader_intervene()
-
-    2. Forced mode (RL behavior)
-       - force_intervention=True bypasses threshold checks
-       - used when RL already selected an intervention action
+        2. Forced mode (RL behavior)
+        - force_intervention=True bypasses threshold checks
+        - used when RL already selected an intervention action
 
     Returns:
         (updated_agents, intervened_bool)
@@ -321,34 +221,16 @@ def run_leader_intervention(
 
     if force_intervention:
         intervened = True
-
     else:
         leader = agents[leader_index]
-
-        intervened = should_leader_intervene(
-            style=style,
-            avg_emotional_valence=avg_emotional_valence,
-            leader=leader,
-            leader_has_intervened=leader_has_intervened,
-        )
+        intervened = should_leader_intervene(tyle=style, avg_emotional_valence=avg_emotional_valence, leader=leader, leader_has_intervened=leader_has_intervened)
 
     if intervened:
-        agents = apply_leader_intervention(
-            agents=agents,
-            leader_index=leader_index,
-            intimacy_matrix=intimacy_matrix,
-            dampening=dampening,
-            clip_min=clip_min,
-            clip_max=clip_max,
-        )
+        agents = apply_leader_intervention(agents=agents, leader_index=leader_index,intimacy_matrix=intimacy_matrix, dampening=dampening, clip_min=clip_min, clip_max=clip_max)
 
     return agents, intervened
 
-
-# =========================================================
 # Summary
-# =========================================================
-
 def summarize_leader_intervention(
     style: str,
     agents: List[dict],
@@ -369,15 +251,11 @@ def summarize_leader_intervention(
         "style": style,
         "leader_index": leader_index,
         "leader_emotion": leader.get("emotion"),
-        "emotionManagementAbility": leader.get(
-            "emotionManagementAbility"
-        ),
-        "interventionThreshold": leader.get(
-            "interventionThreshold"
-        ),
+        "emotionManagementAbility": leader.get("emotionManagementAbility"),
+        "interventionThreshold": leader.get("interventionThreshold"),
         "threshold_mode": get_threshold_mode(style),
         "dampening": dampening,
-        "rl_enabled": rl_enabled,
+        "rl_enabled": rl_enabled
     }
 
     if rl_policy is not None:

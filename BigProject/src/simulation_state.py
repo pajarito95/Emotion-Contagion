@@ -21,22 +21,21 @@ class SimulationState:
     """
     Container for the current state of one simulation.
 
-    Parameters
-    ----------
-    agents: list[dict]
-        All agents in the simulation, leader included
-        Each agent is currently represented as a dictionary
-    leader_index: int
-        Index of leader within `agents`
-    intimacy_matrix: np.ndarray
-        Complete NxN intimacy matrix over all agents
-    assignments: np.ndarray or None, optional
-        Group (community, core-periphery, random) assignments used to generate the network
-        May be None if chosen structure does not use assignments
-    time: int, optional
-        Current simulation timestep
-    metadata: dict, optional
-        Optional dictionary for storing setup/configuration details that are useful to keep alongside the state
+    Parameters:
+        agents: list[dict]
+            All agents in the simulation, leader included
+            Each agent is currently represented as a dictionary
+        leader_index: int
+            Index of leader within `agents`
+        intimacy_matrix: np.ndarray
+            Complete NxN intimacy matrix over all agents
+        assignments: np.ndarray or None, optional
+            Group (community, core-periphery, random) assignments used to generate the network
+            May be None if chosen structure does not use assignments
+        time: int, optional
+            Current simulation timestep
+        metadata: dict, optional
+            Optional dictionary for storing setup/configuration details that are useful to keep alongside the state
     """
     agents: List[Dict[str, Any]]
     leader_index: int
@@ -69,13 +68,11 @@ class SimulationState:
 
         n_agents = len(self.agents)
         expected_shape = (n_agents, n_agents)
-
         if self.intimacy_matrix.shape != expected_shape:
             raise ValueError(f"intimacy_matrix shape {self.intimacy_matrix.shape} does not match the required shape {expected_shape} for {n_agents} agents.")
 
         leader = self.agents[self.leader_index]
         role = leader.get("role", None)
-
         if role != "leader":
             raise ValueError(f"Agent at leader_index={self.leader_index} must have role='leader', but has role={role!r}.")
 
@@ -87,19 +84,13 @@ class SimulationState:
                 raise KeyError(f"agents[{i}] is missing the required key 'index'.")
 
             if agent["index"] != i:
-                raise ValueError(
-                    f"agents[{i}]['index'] must equal its position in the list. "
-                    f"Expected {i}, received {agent['index']}."
-                )
+                raise ValueError(f"agents[{i}]['index'] must equal its position in the list. Expected {i}, received {agent['index']}.")
 
             if "role" not in agent:
                 raise KeyError(f"agents[{i}] is missing the required key 'role'.")
 
             if agent["role"] not in {"leader", "member"}:
-                raise ValueError(
-                    f"agents[{i}]['role'] must be either 'leader' or 'member', "
-                    f"but received {agent['role']!r}."
-                )
+                raise ValueError(f"agents[{i}]['role'] must be either 'leader' or 'member', but received {agent['role']!r}.")
 
         n_leaders = sum(agent["role"] == "leader" for agent in self.agents)
         if n_leaders != 1:
@@ -108,34 +99,34 @@ class SimulationState:
     @property
     def leader(self) -> Dict[str, Any]:
         """
-        Return leader dictionary directly.
+        Return leader dictionary directly
         """
         return self.agents[self.leader_index]
 
     @property
     def members(self) -> List[Dict[str, Any]]:
         """
-        Return non-leader agents.
+        Return non-leader agents
         """
         return [agent for i, agent in enumerate(self.agents) if i != self.leader_index]
 
     @property
     def member_indices(self) -> List[int]:
         """
-        Return indices of non-leader agents.
+        Return indices of non-leader agents
         """
         return [i for i in range(len(self.agents)) if i != self.leader_index]
 
     @property
     def n_agents(self) -> int:
         """
-        Total number of agents including leader.
+        Total number of agents including leader
         """
         return len(self.agents)
 
     @property
     def n_members(self) -> int:
         """
-        Number of non-leader agents.
+        Number of non-leader agents
         """
         return len(self.agents) - 1

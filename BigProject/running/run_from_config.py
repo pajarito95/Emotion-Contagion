@@ -27,7 +27,6 @@ if str(CURRENT_DIR) not in sys.path:
 from metrics import plot_sentiment_evolution
 from run_multiple_simulations import run_multiple_simulations
 
-
 def load_config(config_path: str | Path) -> Dict[str, Any]:
     """
     Load a YAML config file into a dictionary.
@@ -80,7 +79,6 @@ def _resolve_seeds(config: Dict[str, Any]) -> list[int]:
 
     raise ValueError("The config must contain either 'seeds' or 'seed_spec'.")
 
-
 def _build_output_kwargs(output_cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract output-related keyword arguments for run_multiple_simulations(...).
@@ -106,7 +104,6 @@ def _build_output_kwargs(output_cfg: Dict[str, Any]) -> Dict[str, Any]:
         "metadata_filename_template": output_cfg.get("metadata_filename_template", "simulation_result_run_{run_id}_metadata.json"),
     }
 
-
 def _make_sentiment_plots(batch: Dict[str, Any], output_cfg: Dict[str, Any]) -> None:
     """
     Save sentiment evolution plots for each run if requested.
@@ -122,12 +119,7 @@ def _make_sentiment_plots(batch: Dict[str, Any], output_cfg: Dict[str, Any]) -> 
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     for results in batch["results"]:
-        plot_sentiment_evolution(
-            results,
-            save_path=plots_dir / f"sentiment_run_{results.run_id}.png",
-            show=False,
-        )
-
+        plot_sentiment_evolution(results, save_path=plots_dir / f"sentiment_run_{results.run_id}.png", show=False)
 
 def _combine_batch_outputs(batches: list[Dict[str, Any]]) -> Dict[str, Any]:
     """
@@ -157,7 +149,6 @@ def _combine_batch_outputs(batches: list[Dict[str, Any]]) -> Dict[str, Any]:
         "summary_path": summary_path,
     }
 
-
 def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Run simulations according to the YAML config.
@@ -175,40 +166,21 @@ def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if mode == "single":
         single = config.get("single_condition", {})
-        batch = run_multiple_simulations(
-            seeds=seeds,
-            **single,
-            **output_kwargs,
-        )
-
+        batch = run_multiple_simulations(seeds=seeds, **single, **output_kwargs)
     elif mode == "manual":
         conditions = config.get("manual_conditions", [])
-        batch = run_multiple_simulations(
-            seeds=seeds,
-            conditions=conditions,
-            **output_kwargs,
-        )
-
+        batch = run_multiple_simulations(seeds=seeds, conditions=conditions, **output_kwargs)
     elif mode == "grid":
         grid_cfg = config.get("grid", {})
         condition_grid = grid_cfg.get("condition_grid", {})
         fixed_params = grid_cfg.get("fixed_params", {})
         condition_name_keys = grid_cfg.get("condition_name_keys")
-
-        batch = run_multiple_simulations(
-            seeds=seeds,
-            condition_grid=condition_grid,
-            fixed_params=fixed_params,
-            condition_name_keys=condition_name_keys,
-            **output_kwargs,
-        )
-
+        batch = run_multiple_simulations(seeds=seeds, condition_grid=condition_grid, fixed_params=fixed_params, condition_name_keys=condition_name_keys, **output_kwargs,)
     else:
         raise ValueError(f"Unsupported mode {mode!r}. Choose from 'single', 'manual', or 'grid'.")
 
     _make_sentiment_plots(batch, output_cfg)
     return batch
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the emotion contagion ABM from a YAML config file.")
@@ -227,6 +199,5 @@ def main() -> None:
     if batch.get("summary_path") is not None:
         print(f"Summary CSV: {batch['summary_path']}")
 
-
-if __name__ == "__main__":
+if __name__ == "__main__": 
     main()

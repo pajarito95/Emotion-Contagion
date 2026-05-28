@@ -1,5 +1,5 @@
 """
-Lightweight plotting and summary helpers.
+Lightweight plotting and summary helpers
 """
 
 from __future__ import annotations
@@ -31,11 +31,7 @@ def plot_sentiment_evolution(results, save_path: Optional[str | Path] = None, sh
     n_agents = len(emotion_history[0])
 
     # Plot individual member-only trajectories in grey
-    member_indices = [
-        i for i, agent in enumerate(results.state.agents)
-        if agent.get("role") == "member"
-    ]
-
+    member_indices = [i for i, agent in enumerate(results.state.agents) if agent.get("role") == "member"]
     for agent_index in member_indices:
         series = [emotion_history[t][agent_index] for t in timesteps]
         ax.plot(timesteps, series, color="grey", alpha=0.35, linewidth=1)
@@ -86,9 +82,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
         return batch["summary_df"]
     raise ValueError("No summary DataFrame was found in the batch output.")
 
-
-
-
 # from __future__ import annotations
 # import pickle
 # from pathlib import Path
@@ -96,7 +89,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
 # import numpy as np
 # import pandas as pd
 # from simulation_state import AllSimulationResults
-
 
 # STYLE_PRETTY = {
 #     "High_Fully_Constrained": "High Fully",
@@ -107,7 +99,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
 #     "No_Intervention": "None",
 # }
 
-
 # def load_condition(base_dir: str | Path, date_str: str, team_size: int, network_structure: str, style: str) -> AllSimulationResults | None:
 #     path = Path(base_dir) / date_str / f"team_size_{team_size}" / network_structure / style / "all_results.pkl"
 #     if not path.exists():
@@ -116,7 +107,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
     
 #     with open(path, "rb") as f:
 #         return pickle.load(f)
-
 
 # def load_many_conditions(
 #     base_dir: str | Path,
@@ -128,15 +118,8 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
 #     results = {}
 #     for network_structure in network_structures:
 #         for style in styles:
-#             results[(network_structure, style)] = load_condition(
-#                 base_dir=base_dir,
-#                 date_str=date_str,
-#                 team_size=team_size,
-#                 network_structure=network_structure,
-#                 style=style,
-#             )
+#             results[(network_structure, style)] = load_condition(base_dir=base_dir, date_str=date_str, team_size=team_size, network_structure=network_structure, style=style)
 #     return results
-
 
 # def pad_runs(list_of_lists: list[list[float]]) -> np.ndarray:
 #     if len(list_of_lists) == 0:
@@ -149,7 +132,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
 #         arr[i, : len(seq)] = seq
 
 #     return arr
-
 
 # def leader_score_table(results_dict: dict[tuple[str, str], AllSimulationResults | None]) -> pd.DataFrame:
 #     rows = []
@@ -172,7 +154,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
 #             )
 #     return pd.DataFrame(rows)
 
-
 # def temporal_variance_table(results_dict: dict[tuple[str, str], AllSimulationResults | None]) -> pd.DataFrame:
 #     rows = []
 #     for (network, style), results in results_dict.items():
@@ -191,7 +172,6 @@ def summary_dataframe_from_batch(batch) -> pd.DataFrame:
 #                     }
 #                 )
 #     return pd.DataFrame(rows)
-
 
 # def summary_table(results_dict: dict[tuple[str, str], AllSimulationResults | None]) -> pd.DataFrame:
 #     rows = []
