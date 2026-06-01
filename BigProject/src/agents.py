@@ -119,11 +119,11 @@ def configure_leader(leader: Dict[str, Any], style: str) -> Dict[str, Any]:
     # Base leader settings
     leader["emotion"] = 1.0
 
-    if style == "High_Initially_Constrained":
+    if style == "High_Initially_Constrained" or style == "High_Fully_Constrained":
         leader["emotionManagementAbility"] = "High"
         leader["interventionThreshold"] = -0.5
 
-    elif style == "Low_Initially_Constrained":
+    elif style == "Low_Initially_Constrained" or style == "Low_Fully_Constrained":
         leader["emotionManagementAbility"] = "Low"
         leader["interventionThreshold"] = -0.7
 
