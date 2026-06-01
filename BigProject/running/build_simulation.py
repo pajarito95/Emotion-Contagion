@@ -37,14 +37,8 @@ def validate_style(style: str) -> None:
     if style not in VALID_STYLES:
         raise ValueError(f"Invalid leader style {style!r}. Choose from: {sorted(VALID_STYLES)}.")
 
-def assign_indices_and_roles(agents: list[dict], leader_index: int) -> list[dict]:
-    for idx, agent in enumerate(agents):
-        agent["index"] = idx
-        agent["role"] = "leader" if idx == leader_index else "member"
-    return agents
-
 def select_and_configure_leader(rng: np.random.Generator, agents: list[dict], leader_style: str) -> tuple[list[dict], int]:
-    leader_index = int(rng.integers(0, len(agents)))
+    leader_index = int(rng.integers(0, len(agents)))  # use this to randomly select a leader from agents list
     leader = agents[leader_index]
 
     for key in ["delta", "expressiveness", "amplification", "bias"]:
@@ -56,6 +50,12 @@ def select_and_configure_leader(rng: np.random.Generator, agents: list[dict], le
     agents[leader_index] = leader
 
     return agents, leader_index
+
+def assign_indices_and_roles(agents: list[dict], leader_index: int) -> list[dict]:
+    for idx, agent in enumerate(agents):
+        agent["index"] = idx
+        agent["role"] = "leader" if idx == leader_index else "member"
+    return agents
 
 def build_initial_intimacy_matrix(
     rng: np.random.Generator,

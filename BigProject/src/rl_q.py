@@ -120,7 +120,7 @@ def compute_quality(agents, w1: float = 1.0, w2: float = 0.5):
 
 
 # LEADER ACTION APPLICATION
-def apply_leader_action(action, agents,  leader_intimacy):
+def apply_leader_action(action, agents, leader_index, intimacy_matrix):
     """
     Apply RL leader intervention.
 
@@ -153,11 +153,13 @@ def apply_leader_action(action, agents,  leader_intimacy):
     else:
         raise ValueError(f"Unknown RL action: {action}")
 
-    leader = agents
+    leader = agents[leader_index]
+    leader_intimacy = intimacy_matrix[leader_index]
 
     for agent in agents:
-        delta = agent["delta"]
-        agent["emotion"] += (dampening * (leader["emotion"] - agent["emotion"]) * delta * leader_intimacy[agent["index"]])
+        if agent.get("role") != "member":
+            continue
+        agent["emotion"] += (dampening * (leader["emotion"] - agent["emotion"]) * agent["delta"]* leader_intimacy[agent["index"]])
         agent["emotion"] = np.clip(agent["emotion"], -1, 1)
 
 

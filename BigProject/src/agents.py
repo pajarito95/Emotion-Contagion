@@ -87,7 +87,6 @@ def make_agents(rng: np.random.Generator, population_size: int) -> List[Dict[str
         agents.append(agent)
     return agents
 
-
 def configure_leader(leader: Dict[str, Any], style: str) -> Dict[str, Any]:
     """
     Configure one existing agent dictionary as the leader.
@@ -134,7 +133,6 @@ def configure_leader(leader: Dict[str, Any], style: str) -> Dict[str, Any]:
 
     return leader
 
-
 def validate_agents(agents: List[Dict[str, Any]]) -> None:
     """
     Validate that the agent list has the expected basic structure.
@@ -180,7 +178,6 @@ def get_leader(agents: List[Dict[str, Any]], leader_index: int) -> Dict[str, Any
         raise ValueError(f"leader_index={leader_index} is out of bounds for {len(agents)} agents.")
 
     return agents[leader_index]
-
 
 def get_members(agents: List[Dict[str, Any]], leader_index: int) -> List[Dict[str, Any]]:
     """

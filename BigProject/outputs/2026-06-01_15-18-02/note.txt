@@ -1,0 +1,423 @@
+Emotion Contagion ABM Batch Note
+============================================================
+Batch folder: \\lightning.bu.binghamton.edu\WISE\sescott1\Masters\523\Emotion-Contagion\BigProject\outputs\2026-06-01_15-18-02
+Number of conditions: 18
+Number of repetitions: 20
+Seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+Batch Summary
+------------------------------------------------------------
+Population sizes tested: [11]
+Network structures tested: ['community', 'core_periphery', 'random']
+Leader styles tested: ['Free', 'High_Fully_Constrained', 'High_Initially_Constrained', 'Low_Fully_Constrained', 'Low_Initially_Constrained', 'No_Intervention']
+Simulation lengths tested: [235]
+
+Condition Details
+------------------------------------------------------------
+Simulation length: 235
+Condition 1
+----------------------------------------
+Condition name: structure_random__leader_style_No_Intervention
+Leader style: No_Intervention
+Network structure: random
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Random tie strength: 0.5
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 2
+----------------------------------------
+Condition name: structure_random__leader_style_High_Fully_Constrained
+Leader style: High_Fully_Constrained
+Network structure: random
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Random tie strength: 0.5
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 3
+----------------------------------------
+Condition name: structure_random__leader_style_Low_Fully_Constrained
+Leader style: Low_Fully_Constrained
+Network structure: random
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Random tie strength: 0.5
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 4
+----------------------------------------
+Condition name: structure_random__leader_style_High_Initially_Constrained
+Leader style: High_Initially_Constrained
+Network structure: random
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Random tie strength: 0.5
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 5
+----------------------------------------
+Condition name: structure_random__leader_style_Low_Initially_Constrained
+Leader style: Low_Initially_Constrained
+Network structure: random
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Random tie strength: 0.5
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 6
+----------------------------------------
+Condition name: structure_random__leader_style_Free
+Leader style: Free
+Network structure: random
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Random tie strength: 0.5
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 7
+----------------------------------------
+Condition name: structure_community__leader_style_No_Intervention
+Leader style: No_Intervention
+Network structure: community
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of communities: 2
+  Intra-community strength: 0.5
+  Inter-community strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 8
+----------------------------------------
+Condition name: structure_community__leader_style_High_Fully_Constrained
+Leader style: High_Fully_Constrained
+Network structure: community
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of communities: 2
+  Intra-community strength: 0.5
+  Inter-community strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 9
+----------------------------------------
+Condition name: structure_community__leader_style_Low_Fully_Constrained
+Leader style: Low_Fully_Constrained
+Network structure: community
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of communities: 2
+  Intra-community strength: 0.5
+  Inter-community strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 10
+----------------------------------------
+Condition name: structure_community__leader_style_High_Initially_Constrained
+Leader style: High_Initially_Constrained
+Network structure: community
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of communities: 2
+  Intra-community strength: 0.5
+  Inter-community strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 11
+----------------------------------------
+Condition name: structure_community__leader_style_Low_Initially_Constrained
+Leader style: Low_Initially_Constrained
+Network structure: community
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of communities: 2
+  Intra-community strength: 0.5
+  Inter-community strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 12
+----------------------------------------
+Condition name: structure_community__leader_style_Free
+Leader style: Free
+Network structure: community
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of communities: 2
+  Intra-community strength: 0.5
+  Inter-community strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 13
+----------------------------------------
+Condition name: structure_core_periphery__leader_style_No_Intervention
+Leader style: No_Intervention
+Network structure: core_periphery
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of peripheral members: 10
+  Core-to-periphery strength: 0.5
+  Periphery-to-core strength: 0.2
+  Periphery-to-periphery strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 14
+----------------------------------------
+Condition name: structure_core_periphery__leader_style_High_Fully_Constrained
+Leader style: High_Fully_Constrained
+Network structure: core_periphery
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of peripheral members: 10
+  Core-to-periphery strength: 0.5
+  Periphery-to-core strength: 0.2
+  Periphery-to-periphery strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 15
+----------------------------------------
+Condition name: structure_core_periphery__leader_style_Low_Fully_Constrained
+Leader style: Low_Fully_Constrained
+Network structure: core_periphery
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of peripheral members: 10
+  Core-to-periphery strength: 0.5
+  Periphery-to-core strength: 0.2
+  Periphery-to-periphery strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 16
+----------------------------------------
+Condition name: structure_core_periphery__leader_style_High_Initially_Constrained
+Leader style: High_Initially_Constrained
+Network structure: core_periphery
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of peripheral members: 10
+  Core-to-periphery strength: 0.5
+  Periphery-to-core strength: 0.2
+  Periphery-to-periphery strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 17
+----------------------------------------
+Condition name: structure_core_periphery__leader_style_Low_Initially_Constrained
+Leader style: Low_Initially_Constrained
+Network structure: core_periphery
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of peripheral members: 10
+  Core-to-periphery strength: 0.5
+  Periphery-to-core strength: 0.2
+  Periphery-to-periphery strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
+
+Simulation length: 235
+Condition 18
+----------------------------------------
+Condition name: structure_core_periphery__leader_style_Free
+Leader style: Free
+Network structure: core_periphery
+Population size: 11
+Number of leaders: 1
+Number of members: 10
+Adaptive intimacy: True
+RL enabled: True
+Structure details:
+  Number of peripheral members: 10
+  Core-to-periphery strength: 0.5
+  Periphery-to-core strength: 0.2
+  Periphery-to-periphery strength: 0.2
+RL details:
+  RL actions: None
+  alpha: None
+  gamma: None
+  epsilon_start: None
+  epsilon_end: None
+  epsilon_decay_steps: None
