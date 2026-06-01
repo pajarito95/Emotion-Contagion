@@ -220,8 +220,8 @@ def run_simulation(
     homophily_history.append(initial_homophily)
 
     if policy is not None:
-        state_t = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix, leader_index=state.leader_index, homophily_value=initial_homophily)
-        prev_quality = compute_quality( agents=state.agents, leader_index=state.leader_index)
+        state_t = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix)
+        prev_quality = compute_quality( agents=state.agents)
         rl_quality.append(prev_quality)
 
     threshold_mode = behavior["threshold_mode"]
@@ -304,11 +304,11 @@ def run_simulation(
  
         # RL UPDATE
         if policy is not None:
-            new_quality = compute_quality(agents=state.agents, leader_index=state.leader_index)
+            new_quality = compute_quality(agents=state.agents)
             reward_t = new_quality - prev_quality
             prev_quality = new_quality
 
-            state_tp1 = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix, leader_index=state.leader_index, homophily_value=homophily_t)
+            state_tp1 = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix)
 
             policy.update(state=state_t, action=action_t, reward=reward_t, next_state=state_tp1, done=done)
 

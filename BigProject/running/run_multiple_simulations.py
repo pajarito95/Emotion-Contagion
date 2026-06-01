@@ -429,7 +429,7 @@ def run_multiple_simulations(
 
     dampening: float = 0.08,
 
-    use_rl_leader: bool = False,
+    use_rl_leader: bool = True,
     rl_alpha: float = 0.1,
     rl_gamma: float = 0.95,
     rl_epsilon_start: float = 0.3,
@@ -528,7 +528,9 @@ def run_multiple_simulations(
     summary_rows = []
 
     global_run_counter = 0
-
+    print(conditions_to_run[0])
+    for c in conditions_to_run:
+        print(c["leader_style"], c.get("use_rl_leader"))
     for condition_index, condition in enumerate(conditions_to_run, start=1):
         current_condition_name = condition.get(f"condition_name: condition_{condition_index}")
 

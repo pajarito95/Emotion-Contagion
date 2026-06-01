@@ -223,7 +223,7 @@ def run_leader_intervention(
         intervened = True
     else:
         leader = agents[leader_index]
-        intervened = should_leader_intervene(tyle=style, avg_emotional_valence=avg_emotional_valence, leader=leader, leader_has_intervened=leader_has_intervened)
+        intervened = should_leader_intervene(style=style, avg_emotional_valence=avg_emotional_valence, leader=leader, leader_has_intervened=leader_has_intervened)
 
     if intervened:
         agents = apply_leader_intervention(agents=agents, leader_index=leader_index,intimacy_matrix=intimacy_matrix, dampening=dampening, clip_min=clip_min, clip_max=clip_max)

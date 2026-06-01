@@ -49,11 +49,11 @@ def compute_homophily_index(agents, intimacy_matrix, tau: float = 0.35):
     Returns:
       float
     """
-
-    emos = np.array([a["emotion"] for a in agents], dtype=float)
+    member_indices = [i for i, agent in enumerate(agents) if agent.get("role") == "member"]
+    emos = np.array([agents[i]["emotion"] for i in member_indices], dtype=float)
     N = len(emos)
 
-    W = intimacy_matrix.copy()
+    W = intimacy_matrix[np.ix_(member_indices, member_indices)].copy()
     np.fill_diagonal(W, 0.0) # ignore self-ties
 
     similar_weights = []
@@ -92,13 +92,12 @@ def compute_state(agents, intimacy_matrix):
         np.ndarray shape (3,)
     """
 
-    emos = np.array([a["emotion"] for a in agents], dtype=float)
+    emos = np.array([agent["emotion"] for agent in agents if agent.get("role") == "member"], dtype=float)
     mean_emotion = emos.mean()
     variance_emotion = emos.var()
-
     homophily_index = compute_homophily_index(agents, intimacy_matrix)
 
-    return np.array([mean_emotion, variance_emotion, homophily_index], dtype=float,)
+    return np.array([mean_emotion, variance_emotion, homophily_index], dtype=float)
 
 
 # QUALITY FUNCTION
@@ -113,7 +112,7 @@ def compute_quality(agents, w1: float = 1.0, w2: float = 0.5):
     Returns:
     float
     """
-    emos = np.array([a["emotion"] for a in agents], dtype=float,)
+    emos = np.array([agent["emotion"] for agent in agents if agent.get("role") == "member"], dtype=float)
     mean_emotion = emos.mean()
     variance_emotion = emos.var()
 
@@ -121,8 +120,7 @@ def compute_quality(agents, w1: float = 1.0, w2: float = 0.5):
 
 
 # LEADER ACTION APPLICATION
-def apply_leader_action(
-    action, agents,  leader,  leader_intimacy):
+def apply_leader_action(action, agents,  leader_intimacy):
     """
     Apply RL leader intervention.
 
@@ -155,10 +153,12 @@ def apply_leader_action(
     else:
         raise ValueError(f"Unknown RL action: {action}")
 
+    leader = agents
+
     for agent in agents:
         delta = agent["delta"]
         agent["emotion"] += (dampening * (leader["emotion"] - agent["emotion"]) * delta * leader_intimacy[agent["index"]])
-        agent["emotion"] = np.clip(agent["emotion"], -1, 1,)
+        agent["emotion"] = np.clip(agent["emotion"], -1, 1)
 
 
 # TABULAR Q-LEARNING POLICY
@@ -273,26 +273,26 @@ class QLearningLeaderPolicy:
 leader_behaviors = {
     "No_Intervention": {
         "uses_rl": False,
-        "threshold_mode": "never",
+        "threshold_mode": "never"
     },
     "High_Fully_Constrained": {
         "uses_rl": True,
-        "threshold_mode": "always",
+        "threshold_mode": "always"
     },
     "Low_Fully_Constrained": {
         "uses_rl": True,
-        "threshold_mode": "always",
+        "threshold_mode": "always"
     },
     "High_Initially_Constrained": {
         "uses_rl": True,
-        "threshold_mode": "initial",
+        "threshold_mode": "initial"
     },
     "Low_Initially_Constrained": {
         "uses_rl": True,
-        "threshold_mode": "initial",
+        "threshold_mode": "initial"
     },
     "Free": {
         "uses_rl": True,
-        "threshold_mode": "never",
-    },
+        "threshold_mode": "never"
+    }
 }

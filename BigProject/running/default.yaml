@@ -22,7 +22,7 @@ seed_spec:
 # ============================================================
 # RL DEFAULTS
 rl:
-  use_rl: true
+  use_rl_leader: true
 
   actions: [0, 1, 2, 3]
 
@@ -96,7 +96,7 @@ single_condition:
   dampening: 0.08
 
   # RL
-  use_rl: true
+  use_rl_leader: true
 
 # ============================================================
 # MANUAL CONDITIONS
@@ -145,7 +145,7 @@ manual_conditions:
     dampening: 0.08
 
     # RL
-    use_rl: true
+    use_rl_leader: true
 
   - condition_name: random_none
 
@@ -190,7 +190,7 @@ manual_conditions:
     dampening: 0.08
 
     # RL
-    use_rl: false
+    use_rl_leader: false
 
   - condition_name: core_periphery_low
 
@@ -235,7 +235,7 @@ manual_conditions:
     dampening: 0.08
 
     # RL
-    use_rl: true
+    use_rl_leader: true
 
 # ============================================================
 # GRID CONDITIONS
@@ -272,7 +272,7 @@ grid:
     dampening: 0.08
 
     # RL
-    use_rl: true
+    use_rl_leader: true
 
     # random
     strength: 0.5
