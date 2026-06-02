@@ -236,15 +236,14 @@ def summarize_leader_intervention(
     agents: List[dict],
     leader_index: int,
     dampening: float,
-    rl_enabled: bool = False,
-    rl_policy: Optional[object] = None,
+    # rl_enabled: bool,
+    # rl_policy: Optional[object] = None,
 ) -> Dict[str, object]:
     """
     Create a summary dictionary describing the leader setup.
     """
     validate_leader_style(style)
     validate_leader_index(agents, leader_index)
-
     leader = agents[leader_index]
 
     summary = {
@@ -255,17 +254,17 @@ def summarize_leader_intervention(
         "interventionThreshold": leader.get("interventionThreshold"),
         "threshold_mode": get_threshold_mode(style),
         "dampening": dampening,
-        "rl_enabled": rl_enabled
+        # "rl_enabled": rl_enabled
     }
 
-    if rl_policy is not None:
-        summary.update(
-            {
-                "rl_alpha": getattr(rl_policy, "alpha", None),
-                "rl_gamma": getattr(rl_policy, "gamma", None),
-                "rl_epsilon": getattr(rl_policy, "epsilon", None),
-                "rl_actions": getattr(rl_policy, "actions", None),
-            }
-        )
+    # if rl_policy is not None:
+    #     summary.update(
+    #         {
+    #             "rl_alpha": getattr(rl_policy, "alpha", None),
+    #             "rl_gamma": getattr(rl_policy, "gamma", None),
+    #             "rl_epsilon": getattr(rl_policy, "epsilon", None),
+    #             "rl_actions": getattr(rl_policy, "actions", None),
+    #         }
+    #     )
 
     return summary

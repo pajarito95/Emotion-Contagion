@@ -325,7 +325,7 @@ def run_simulation(
         time += 1
         state.time = time
 
-    leader_summary = summarize_leader_intervention(style=leader_style, agents=state.agents, leader_index=state.leader_index, dampening=dampening)
+    leader_summary = summarize_leader_intervention(style=leader_style, agents=state.agents, leader_index=state.leader_index, dampening=dampening)#, rl_enabled=use_rl_leader, rl_policy=policy)
 
     metadata = dict(state.metadata)
     metadata.update(
