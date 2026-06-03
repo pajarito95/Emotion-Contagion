@@ -182,8 +182,8 @@ def apply_leader_intervention(
         if member["index"] != member_index:
             raise ValueError(f"Member at list position {member_index} has index={member['index']} but expected {member_index}.")
 
-        influence_weight = float(intimacy_matrix[leader_index, member_index])
-        member["emotion"] += (dampening * (leader["emotion"] - member["emotion"]) * member["delta"] * influence_weight)
+        #influence_weight = float(intimacy_matrix[leader_index, member_index])
+        member["emotion"] += dampening * (leader["emotion"] - member["emotion"]) * member["delta"] #* influence_weight
         member["emotion"] = float(np.clip(member["emotion"], clip_min, clip_max))
 
     return agents

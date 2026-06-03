@@ -17,7 +17,7 @@ output:
 
 seed_spec:
   start: 0
-  n_repetitions: 20
+  n_repetitions: 13
 
 # ============================================================
 # RL DEFAULTS
@@ -247,9 +247,9 @@ grid:
 
   fixed_params:
 
-    population_size: 11
+    population_size: 15
 
-    max_iterations: 235
+    max_iterations: 420
 
     min_weight: 0.01
 
@@ -283,7 +283,7 @@ grid:
     inter_strength: 0.2
 
     # core-periphery
-    n_periphery: 10
+    n_periphery: 3
     core_to_periph: 0.5
     periph_to_core: 0.2
     periph_to_periph: 0.2
