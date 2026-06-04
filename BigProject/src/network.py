@@ -101,30 +101,20 @@ def _community_assignments(rng: np.random.Generator, population: int, n_communit
 
     return assignments
 
-def _core_periphery_assignments(population: int, leader_index: int, n_periphery: int) -> np.ndarray:
+def _core_periphery_assignments(rng: np.random.Generator, population: int, core_proportion: float) -> np.ndarray:
     """
-    Create core-periphery assignments with the leader fixed as the only core.
+    Create random core-periphery assignments.
 
     Returns an integer array of length population with labels:
     - 1 = core
     - 0 = periphery
     """
-    if not isinstance(n_periphery, int):
-        raise TypeError(f"n_periphery must be an integer, but received {type(n_periphery).__name__}.")
-
-    n_non_leader = population - 1
-
-    if n_periphery < 1:
-        raise ValueError(f"n_periphery must be at least 1, but received {n_periphery}.")
-
-    if n_periphery > n_non_leader:
-        raise ValueError(f"Requested n_periphery={n_periphery}, but only {n_non_leader} non-leader agents are available. Reduce n_periphery or increase population.")
-
-    if n_periphery != n_non_leader:
-        raise ValueError(f"With the current design, the leader is the single core and all non-leader agents are peripheral, so n_periphery must equal {n_non_leader}. Received {n_periphery}.")
+    assert 0 <= core_proportion <= 1
+    core_size = max(1, round(population * core_proportion))
+    core_indices = rng.choice(population, size=core_size, replace=False)
 
     assignments = np.zeros(population, dtype=int)
-    assignments[leader_index] = 1
+    assignments[core_indices] = 1
 
     return assignments
 
@@ -138,7 +128,8 @@ def create_intimacy_matrix(
     n_communities: Optional[int] = None,
     intra_strength: Optional[float] = None,
     inter_strength: Optional[float] = None,
-    n_periphery: Optional[int] = None,
+    core_proportion: Optional[float] = None,
+    core_to_core: Optional[float] = None,
     core_to_periph: Optional[float] = None,
     periph_to_core: Optional[float] = None,
     periph_to_periph: Optional[float] = None,
@@ -148,43 +139,44 @@ def create_intimacy_matrix(
 
     Parameters:
         rng : np.random.Generator
-            Random number generator.
+            Random number generator
         population : int
-            Total number of agents, including the leader.
+            Total number of agents, including the leader
         structure : str
-            One of: "random", "community", "core_periphery".
+            One of: "random", "community", "core_periphery"
         min_weight : float, optional
-            Minimum raw tie weight before normalization.
+            Minimum raw tie weight before normalization
         leader_index : int
-            Index of the leader in the shared population list.
+            Index of the leader in the shared population list
 
     Random-specific parameters:
         strength : float
-            Single upper bound used for all off-diagonal ties.
+            Single upper bound used for all off-diagonal ties
 
     Community-specific parameters:
         n_communities : int
-            Number of communities to generate.
+            Number of communities to generate
         intra_strength : float
-            Upper bound for within-community ties.
+            Upper bound for within-community ties
         inter_strength : float
-            Upper bound for between-community ties.
+            Upper bound for between-community ties
 
     Core-periphery-specific parameters:
-        n_periphery : int
-            Number of peripheral agents. Under the current design this must equal
-            the number of non-leader agents.
+        core_proportion : float
+            Proportion of agents that will be in the core
+        core_to_core: float
+            Upper bound for core -> core ties
         core_to_periph : float
-            Upper bound for leader/core -> periphery ties.
+            Upper bound for leader/core -> periphery ties
         periph_to_core : float
-            Upper bound for periphery -> leader/core ties.
+            Upper bound for periphery -> leader/core ties
         periph_to_periph : float
-            Upper bound for periphery -> periphery ties.
+            Upper bound for periphery -> periphery ties
 
     Returns:
         tuple[np.ndarray, np.ndarray]
             intimacy_matrix : np.ndarray
-                Full NxN directed, row-normalized intimacy matrix.
+                Full NxN directed, row-normalized intimacy matrix
             assignments : np.ndarray
                 Structure assignments.
                 - random/community: integer community labels
@@ -234,8 +226,10 @@ def create_intimacy_matrix(
         return _normalize_rows(W), assignments
 
     if structure == "core_periphery":
-        if n_periphery is None:
-            raise ValueError("For structure='core_periphery', you must provide n_periphery.")
+        if core_proportion is None:
+            raise ValueError("For structure='core_periphery', you must provide core_proportion.")
+        if core_to_core is None:
+            raise ValueError("For structure='core_periphery', you must provide core_to_core.")
         if core_to_periph is None:
             raise ValueError("For structure='core_periphery', you must provide core_to_periph.")
         if periph_to_core is None:
@@ -243,28 +237,29 @@ def create_intimacy_matrix(
         if periph_to_periph is None:
             raise ValueError("For structure='core_periphery', you must provide periph_to_periph.")
 
+        _validate_strength(core_to_core, "core_to_core")
         _validate_strength(core_to_periph, "core_to_periph")
         _validate_strength(periph_to_core, "periph_to_core")
         _validate_strength(periph_to_periph, "periph_to_periph")
 
-        assignments = _core_periphery_assignments( population=population, leader_index=leader_index, n_periphery=n_periphery,)
+        assignments = _core_periphery_assignments(rng=rng, population=population, core_proportion=core_proportion)
 
         for i in range(population):
             for j in range(population):
                 if i == j:
                     continue
 
-                from_is_core = assignments[i] == 1
-                to_is_core = assignments[j] == 1
+                from_core = assignments[i] == 1
+                to_core = assignments[j] == 1
 
-                if from_is_core and not to_is_core:
+                if from_core and to_core:
+                    upper = core_to_core
+                elif from_core and not to_core:
                     upper = core_to_periph
-                elif not from_is_core and to_is_core:
+                elif not from_core and to_core:
                     upper = periph_to_core
-                elif not from_is_core and not to_is_core:
+                elif not from_core and not to_core:
                     upper = periph_to_periph
-                else:
-                    raise ValueError("core_to_core ties are not used in the current core_periphery design because the leader is the single core.")
 
                 W[i, j] = _sample_weight(rng=rng, upper_bound=upper, min_weight=min_weight)
 
