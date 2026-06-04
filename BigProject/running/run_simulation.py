@@ -201,7 +201,7 @@ def run_simulation(
         if policy is not None:
             avg_emotional_valence = avgEmotion(agents=state.agents)
 
-            leader = state.agents[state.leader_index]
+            leader = state.agents[-1]
             threshold = leader.get("interventionThreshold")
 
             if threshold_mode == "never":

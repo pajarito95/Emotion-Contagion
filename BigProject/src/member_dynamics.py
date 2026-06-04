@@ -4,7 +4,7 @@ Follower/member emotional contagion and adaptive intimacy logic for the emotion 
 Current design assumptions:
 - All agents, including the leader, are stored in one shared `agents` list.
 - Leader is identified by the last element in agents list.
-- One unified intimacy matrix stores all pairwise ties.
+- One intimacy matrix storing member ties.
 - Regular emotional contagion is applied only to members.
 - Leader intervention is handled separately in leader_intervention.py.
 - Adaptive intimacy updates here affect member-member ties only.
@@ -85,7 +85,7 @@ def update_intimacy_matrix(
 
     Parameters:
         intimacy: np.ndarray
-            Full NxN intimacy matrix over all agents
+            N-1xN-1 intimacy matrix over member agents
         agents: list[dict]
             Full agent list
         kappa: float
@@ -163,7 +163,7 @@ def emotional_valence_update(
         agents: list[dict]
             Full agent list including the leader
         intimacyMatrix: np.ndarray
-            Full NxN intimacy matrix
+            N-1xN-1 intimacy matrix over member agents
         absorption_dict: dict
             Dictionary storing cumulative absolute emotional changes by ordered pair
 
@@ -236,7 +236,7 @@ def agent_interaction(
         agents: list[dict]
             Full agent list including the leader
         intimacyMatrix: np.ndarray
-            Full NxN intimacy matrix
+            N-1xN-1 intimacy matrix over member agents
         absorption_dict: dict
             Cumulative absorption/change tracker
 
