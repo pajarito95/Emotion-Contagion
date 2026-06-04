@@ -3,16 +3,16 @@ Leader-specific intervention logic for the emotion contagion ABM.
 
 Current design assumptions:
 - All agents, including the leader, are stored in one shared `agents` list.
-- The leader is identified by `leader_index`.
-- One unified intimacy matrix stores all pairwise ties.
-- The leader remains in the shared matrix but is treated differently from members.
+- The leader is identified by `leader_index` which should be the last index in the list.
+- One unified intimacy matrix stores all pairwise member ties.
+- The leader is excluded from the intimacy matrix.
 - Leader intervention affects only members.
 - RL policy selection happens in run_simulation.py.
 - This module only applies interventions and handles threshold logic.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple#, Optional
 import numpy as np
 
 VALID_STYLES = {"No_Intervention", "High_Fully_Constrained", "Low_Fully_Constrained", "High_Initially_Constrained", "Low_Initially_Constrained", "Free"}
@@ -54,6 +54,10 @@ def validate_leader_index(agents: List[dict], leader_index: int) -> None:
     if agents[leader_index].get("role") != "leader":
         raise ValueError(f"Agent at leader_index={leader_index} must have role='leader', but found role={agents[leader_index].get('role')!r}.")
 
+    # validate that leader index is the last index in agents list
+    if leader_index != len(agents) - 1:
+        raise ValueError(f"leader_index={leader_index} is expected to be the last index in agents list (index {len(agents) - 1}).")
+
 def validate_intimacy_matrix(intimacy_matrix: np.ndarray, agents: List[dict]) -> None:
     """
     Validate intimacy matrix dimensions
@@ -64,19 +68,19 @@ def validate_intimacy_matrix(intimacy_matrix: np.ndarray, agents: List[dict]) ->
     if intimacy_matrix.ndim != 2:
         raise ValueError(f"intimacy_matrix must be 2D, but received shape {intimacy_matrix.shape}.")
 
-    n_agents = len(agents)
+    n_agents = len(agents) - 1  # exclude leader
 
     if intimacy_matrix.shape != (n_agents, n_agents):
-        raise ValueError(f"intimacy_matrix shape {intimacy_matrix.shape} does not match required shape ({n_agents}, {n_agents}).")
+        raise ValueError(f"intimacy_matrix shape {intimacy_matrix.shape} does not match expected shape ({n_agents}, {n_agents}).")
 
 # Helpers
-def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
-    """
-    Return all non-leader member indices
-    """
-    validate_leader_index(agents, leader_index)
+# def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
+#     """
+#     Return all non-leader member indices
+#     """
+#     validate_leader_index(agents, leader_index)
 
-    return [i for i, agent in enumerate(agents) if i != leader_index and agent.get("role") == "member"]
+#     return [i for i, agent in enumerate(agents) if i != leader_index and agent.get("role") == "member"]
 
 def get_threshold_mode(style: str) -> str:
     """
@@ -155,7 +159,7 @@ def apply_leader_intervention(
     Apply a leader intervention to member agents.
 
     Each member is pulled toward the leader's emotion: 
-        dampening * (leader_emotion - member_emotion) * member_delta * intimacy_matrix[leader_index, member_index]
+        dampening * (leader_emotion - member_emotion) * member_delta
     """
     validate_leader_index(agents, leader_index)
     validate_intimacy_matrix(intimacy_matrix, agents)
@@ -170,8 +174,7 @@ def apply_leader_intervention(
     if "emotion" not in leader:
         raise KeyError("Leader must contain key 'emotion'.")
 
-    member_indices = get_member_indices(agents, leader_index)
-    for member_index in member_indices:
+    for member_index in range(len(agents) - 1):  # exclude leader
         member = agents[member_index]
 
         required_keys = {"emotion", "delta", "index", "role"}

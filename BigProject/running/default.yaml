@@ -80,7 +80,8 @@ single_condition:
   inter_strength: null
 
   # core-periphery
-  n_periphery: null
+  core_proportion: null
+  core_to_core: null
   core_to_periph: null
   periph_to_core: null
   periph_to_periph: null
@@ -129,7 +130,8 @@ manual_conditions:
     inter_strength: 0.2
 
     # core-periphery
-    n_periphery: null
+    core_proportion: null
+    core_to_core: null
     core_to_periph: null
     periph_to_core: null
     periph_to_periph: null
@@ -283,10 +285,11 @@ grid:
     inter_strength: 0.2
 
     # core-periphery
-    n_periphery: 3
+    core_proportion: 0.25
+    core_to_core: 0.65
     core_to_periph: 0.5
     periph_to_core: 0.2
-    periph_to_periph: 0.2
+    periph_to_periph: 0.1
 
   condition_grid:
 

@@ -3,7 +3,7 @@ Build initial state of the emotion contagion simulation.
 
 Current design assumptions:
 - All agents, including the leader, are stored in one shared `agents` list.
-- The leader is identified by `leader_index`.
+- The leader is identified by the last element in the `agents` list.
 - One unified intimacy matrix stores all pairwise ties.
 - Agents are labeled with role = "leader" or role = "member".
 - For now, regular contagion updates are applied only to members.
@@ -38,16 +38,14 @@ def validate_style(style: str) -> None:
         raise ValueError(f"Invalid leader style {style!r}. Choose from: {sorted(VALID_STYLES)}.")
 
 def select_and_configure_leader(rng: np.random.Generator, agents: list[dict], leader_style: str) -> tuple[list[dict], int]:
-    leader_index = int(rng.integers(0, len(agents)))  # use this to randomly select a leader from agents list
-    leader = agents[leader_index]
+    leader_og_index = int(rng.integers(0, len(agents)))  # use this to randomly select a leader from agents list
+    leader = agents.pop(leader_og_index)
 
-    for key in ["delta", "expressiveness", "amplification", "bias"]:
-        if key in leader:
-            del leader[key]
-
-    leader["emotion"] = 1.0
     leader = configure_leader(leader, leader_style)
-    agents[leader_index] = leader
+    
+    agents.append(leader)  # add leader back to the end of the agents list so it stays within, and agent-matrix indexing still aligns exactly and is easy to iterate over and the last index can easily just be excluded
+    
+    leader_index = len(agents) - 1
 
     return agents, leader_index
 
@@ -61,79 +59,42 @@ def build_initial_intimacy_matrix(
     rng: np.random.Generator,
     population_size: int,
     structure: str,
-    leader_index: int,
     min_weight: float = 0.01,
-    include_leader_ties: bool = True,
-    leader_to_member_cap: Optional[float] = None,
-    member_to_leader_cap: Optional[float] = None,
-    leader_to_member_value: Optional[float] = None,
-    member_to_leader_value: Optional[float] = None,
+    # include_leader_ties: bool = True,
+    # leader_to_member_cap: Optional[float] = None,
+    # member_to_leader_cap: Optional[float] = None,
+    # leader_to_member_value: Optional[float] = None,
+    # member_to_leader_value: Optional[float] = None,
     strength: Optional[float] = None,
     n_communities: Optional[int] = None,
     intra_strength: Optional[float] = None,
     inter_strength: Optional[float] = None,
-    n_periphery: Optional[int] = None,
+    core_proportion: Optional[float] = None,
+    core_to_core: Optional[float] = None,
     core_to_periph: Optional[float] = None,
     periph_to_core: Optional[float] = None,
     periph_to_periph: Optional[float] = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Build one unified intimacy matrix over all agents. 
-    Base matrix generation is delegated to network.py, then optionally leader-related ties are overwritten to make leader-member ties distinct from member-member ties.
+    Build one unified intimacy matrix over all member agents. Base matrix generation is delegated to network.py.
+    Leader is excluded from network generation and should not appear in any intimacy matrix.
     """
     intimacy_matrix, assignments = create_intimacy_matrix(
         rng=rng,
-        population=population_size,
+        population=population_size - 1,
         structure=structure,
         min_weight=min_weight,
-        leader_index=leader_index,
         strength=strength,
         n_communities=n_communities,
         intra_strength=intra_strength,
         inter_strength=inter_strength,
-        n_periphery=n_periphery,
+        core_proportion=core_proportion,
+        core_to_core=core_to_core,
         core_to_periph=core_to_periph,
         periph_to_core=periph_to_core,
         periph_to_periph=periph_to_periph,
     )
 
-    if not include_leader_ties:
-        intimacy_matrix[leader_index, :] = 0.0
-        intimacy_matrix[:, leader_index] = 0.0
-        intimacy_matrix[leader_index, leader_index] = 0.0
-
-        row_sums = intimacy_matrix.sum(axis=1, keepdims=True)
-        safe_rows = row_sums.squeeze() > 0
-        intimacy_matrix[safe_rows] = intimacy_matrix[safe_rows] / row_sums[safe_rows]
-        return intimacy_matrix, assignments
-
-    n = population_size
-
-    for j in range(n):
-        if j == leader_index:
-            continue
-
-        if leader_to_member_value is not None:
-            intimacy_matrix[leader_index, j] = leader_to_member_value
-        elif leader_to_member_cap is not None:
-            if leader_to_member_cap < min_weight:
-                raise ValueError("leader_to_member_cap must be at least min_weight.")
-            intimacy_matrix[leader_index, j] = rng.uniform(min_weight, leader_to_member_cap)
-
-        if member_to_leader_value is not None:
-            intimacy_matrix[j, leader_index] = member_to_leader_value
-        elif member_to_leader_cap is not None:
-            if member_to_leader_cap < min_weight:
-                raise ValueError("member_to_leader_cap must be at least min_weight.")
-            intimacy_matrix[j, leader_index] = rng.uniform(min_weight, member_to_leader_cap)
-
-    intimacy_matrix[leader_index, leader_index] = 0.0
-
-    row_sums = intimacy_matrix.sum(axis=1, keepdims=True)
-    if np.any(row_sums <= 0):
-        raise ValueError("At least one intimacy row has zero sum after applying leader tie rules. Increase allowed tie values or avoid zeroing all ties in a row.")
-
-    intimacy_matrix = intimacy_matrix / row_sums
     return intimacy_matrix, assignments
 
 def initialize_simulation(
@@ -142,16 +103,17 @@ def initialize_simulation(
     structure: str,
     leader_style: str,
     min_weight: float = 0.01,
-    include_leader_ties: bool = True,
-    leader_to_member_cap: Optional[float] = None,
-    member_to_leader_cap: Optional[float] = None,
-    leader_to_member_value: Optional[float] = None,
-    member_to_leader_value: Optional[float] = None,
+    # include_leader_ties: bool = True,
+    # leader_to_member_cap: Optional[float] = None,
+    # member_to_leader_cap: Optional[float] = None,
+    # leader_to_member_value: Optional[float] = None,
+    # member_to_leader_value: Optional[float] = None,
     strength: Optional[float] = None,
     n_communities: Optional[int] = None,
     intra_strength: Optional[float] = None,
     inter_strength: Optional[float] = None,
-    n_periphery: Optional[int] = None,
+    core_proportion: Optional[float] = None,
+    core_to_core: Optional[float] = None,
     core_to_periph: Optional[float] = None,
     periph_to_core: Optional[float] = None,
     periph_to_periph: Optional[float] = None,
@@ -162,7 +124,7 @@ def initialize_simulation(
     Structure-specific parameters:
     - random: strength
     - community: n_communities, intra_strength, inter_strength
-    - core_periphery: n_periphery, core_to_periph, periph_to_core, periph_to_periph
+    - core_periphery: core_proportion, core_to_core, core_to_periph, periph_to_core, periph_to_periph
     """
     validate_population_size(population_size)
     validate_structure(structure)
@@ -180,18 +142,18 @@ def initialize_simulation(
         rng=rng,
         population_size=population_size,
         structure=structure,
-        leader_index=leader_index,
         min_weight=min_weight,
-        include_leader_ties=include_leader_ties,
-        leader_to_member_cap=leader_to_member_cap,
-        member_to_leader_cap=member_to_leader_cap,
-        leader_to_member_value=leader_to_member_value,
-        member_to_leader_value=member_to_leader_value,
+        # include_leader_ties=include_leader_ties,
+        # leader_to_member_cap=leader_to_member_cap,
+        # member_to_leader_cap=member_to_leader_cap,
+        # leader_to_member_value=leader_to_member_value,
+        # member_to_leader_value=member_to_leader_value,
         strength=strength,
         n_communities=n_communities,
         intra_strength=intra_strength,
         inter_strength=inter_strength,
-        n_periphery=n_periphery,
+        core_proportion=core_proportion,
+        core_to_core=core_to_core,
         core_to_periph=core_to_periph,
         periph_to_core=periph_to_core,
         periph_to_periph=periph_to_periph,
@@ -201,16 +163,17 @@ def initialize_simulation(
         "population_size": population_size,
         "structure": structure,
         "leader_style": leader_style,
-        "include_leader_ties": include_leader_ties,
-        "leader_to_member_cap": leader_to_member_cap,
-        "member_to_leader_cap": member_to_leader_cap,
-        "leader_to_member_value": leader_to_member_value,
-        "member_to_leader_value": member_to_leader_value,
+        # "include_leader_ties": include_leader_ties,
+        # "leader_to_member_cap": leader_to_member_cap,
+        # "member_to_leader_cap": member_to_leader_cap,
+        # "leader_to_member_value": leader_to_member_value,
+        # "member_to_leader_value": member_to_leader_value,
         "strength": strength,
         "n_communities": n_communities,
         "intra_strength": intra_strength,
         "inter_strength": inter_strength,
-        "n_periphery": n_periphery,
+        "core_proportion": core_proportion,
+        "core_to_core": core_to_core,
         "core_to_periph": core_to_periph,
         "periph_to_core": periph_to_core,
         "periph_to_periph": periph_to_periph,

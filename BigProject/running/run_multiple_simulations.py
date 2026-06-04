@@ -132,7 +132,8 @@ def _build_single_condition_from_arguments(
     n_communities: Optional[int],
     intra_strength: Optional[float],
     inter_strength: Optional[float],
-    n_periphery: Optional[int],
+    core_proportion: Optional[float],
+    core_to_core: Optional[float],
     core_to_periph: Optional[float],
     periph_to_core: Optional[float],
     periph_to_periph: Optional[float],
@@ -176,7 +177,8 @@ def _build_single_condition_from_arguments(
         "intra_strength": intra_strength,
         "inter_strength": inter_strength,
 
-        "n_periphery": n_periphery,
+        "core_proportion": core_proportion,
+        "core_to_core": core_to_core,
         "core_to_periph": core_to_periph,
         "periph_to_core": periph_to_core,
         "periph_to_periph": periph_to_periph,
@@ -316,7 +318,8 @@ def _format_condition_note(condition: Dict[str, Any], index: int) -> List[str]:
 
     elif structure == "core_periphery":
         lines.append("Structure details:")
-        lines.append(f"  Number of peripheral members: {condition.get('n_periphery')}")
+        lines.append(f"  Core proportion: {condition.get('core_proportion')}")
+        lines.append(f"  Core-to-core strength: {condition.get('core_to_core')}")
         lines.append(f"  Core-to-periphery strength: {condition.get('core_to_periph')}")
         lines.append(f"  Periphery-to-core strength: {condition.get('periph_to_core')}")
         lines.append(f"  Periphery-to-periphery strength: {condition.get('periph_to_periph')}")
@@ -416,7 +419,8 @@ def run_multiple_simulations(
     intra_strength: Optional[float] = None,
     inter_strength: Optional[float] = None,
 
-    n_periphery: Optional[int] = None,
+    core_proportion: Optional[float] = None,
+    core_to_core: Optional[float] = None,
     core_to_periph: Optional[float] = None,
     periph_to_core: Optional[float] = None,
     periph_to_periph: Optional[float] = None,
@@ -492,7 +496,8 @@ def run_multiple_simulations(
                 intra_strength=intra_strength,
                 inter_strength=inter_strength,
 
-                n_periphery=n_periphery,
+                core_proportion=core_proportion,
+                core_to_core=core_to_core,
                 core_to_periph=core_to_periph,
                 periph_to_core=periph_to_core,
                 periph_to_periph=periph_to_periph,
@@ -560,7 +565,8 @@ def run_multiple_simulations(
                 intra_strength=condition.get("intra_strength"),
                 inter_strength=condition.get("inter_strength"),
 
-                n_periphery=condition.get("n_periphery"),
+                core_proportion=condition.get("core_proportion"),
+                core_to_core=condition.get("core_to_core"),
                 core_to_periph=condition.get("core_to_periph"),
                 periph_to_core=condition.get("periph_to_core"),
                 periph_to_periph=condition.get("periph_to_periph"),

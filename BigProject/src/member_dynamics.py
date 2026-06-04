@@ -3,7 +3,7 @@ Follower/member emotional contagion and adaptive intimacy logic for the emotion 
 
 Current design assumptions:
 - All agents, including the leader, are stored in one shared `agents` list.
-- Leader is identified by `leader_index`.
+- Leader is identified by the last element in agents list.
 - One unified intimacy matrix stores all pairwise ties.
 - Regular emotional contagion is applied only to members.
 - Leader intervention is handled separately in leader_intervention.py.
@@ -14,42 +14,40 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 import numpy as np
 
-def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
-    """
-    Return the indices of all non-leader agents.
+# def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
+#     """
+#     Return the indices of all non-leader agents.
 
-    Parameters:
-        agents: list[dict]
-            Full agent list including the leader
-        leader_index: int
-            Index of the leader
+#     Parameters:
+#         agents: list[dict]
+#             Full agent list including the leader
+#         leader_index: int
+#             Index of the leader
 
-    Returns:
-        list[int]
-            Indices of member agents only.
-    """
-    if not isinstance(agents, list) or len(agents) == 0:
-        raise ValueError("agents must be a non-empty list.")
+#     Returns:
+#         list[int]
+#             Indices of member agents only.
+#     """
+#     if not isinstance(agents, list) or len(agents) == 0:
+#         raise ValueError("agents must be a non-empty list.")
     
-    if not isinstance(leader_index, int):
-        raise TypeError("leader_index must be an integer.")
+#     if not isinstance(leader_index, int):
+#         raise TypeError("leader_index must be an integer.")
     
-    if not (0 <= leader_index < len(agents)):
-        raise ValueError(f"leader_index={leader_index} is out of bounds for {len(agents)} agents.")
+#     if not (0 <= leader_index < len(agents)):
+#         raise ValueError(f"leader_index={leader_index} is out of bounds for {len(agents)} agents.")
 
-    return [i for i, agent in enumerate(agents) if agent.get("role") == "member"]
+#     return [i for i, agent in enumerate(agents) if agent.get("role") == "member"]
 
 
-def avgEmotion(agents: List[dict], leader_index: int | None = None) -> float:
+def avgEmotion(agents: List[dict]) -> float:
     """
     Calculate average emotional valence across members.
 
     Parameters:
         agents: list[dict]
             Full agent list
-        leader_index: int or None, optional
-            Leader index. If provided, the leader is excluded explicitly. If omitted, all agents with role='member' are used.
-
+        
     Returns:
         float
             Mean emotional valence of the members
@@ -57,11 +55,10 @@ def avgEmotion(agents: List[dict], leader_index: int | None = None) -> float:
     if len(agents) == 0:
         raise ValueError("avgEmotion received an empty agents list.")
 
-    if leader_index is not None:
-        member_indices = get_member_indices(agents, leader_index)
-        member_emotions = [agents[i]["emotion"] for i in member_indices]
-    else:
-        member_emotions = [agent["emotion"] for agent in agents if agent.get("role") == "member"]
+    if agents[-1].get("role") != "leader":
+        raise ValueError("Last agent expected to be leader.")
+
+    member_emotions = [agent["emotion"] for agent in agents[:-1]]
 
     if len(member_emotions) == 0:
         raise ValueError("No member agents were found when computing avgEmotion.")
@@ -72,29 +69,25 @@ def avgEmotion(agents: List[dict], leader_index: int | None = None) -> float:
 def update_intimacy_matrix(
     intimacy: np.ndarray,
     agents: List[dict],
-    leader_index: int,
     kappa: float,
     decay: float,
     min_w: float,
     max_w: float,
-    eps: float = 1e-9,
+    eps: float = 1e-9
 ) -> np.ndarray:
     """
     Adapt member-member intimacy weights based on emotional similarity.
 
     Current behavior:
-    - only member-member ties are updated here
-    - leader-related ties are preserved as they currently are
-    - self-ties are set to zero
-    - each updated member row is renormalized across member columns only
+    - member-member ties are updated here
+    - self-ties set to zero
+    - each updated member row is renormalized
 
     Parameters:
         intimacy: np.ndarray
             Full NxN intimacy matrix over all agents
         agents: list[dict]
-            Full agent list including the leader
-        leader_index: int
-            Index of the leader
+            Full agent list
         kappa: float
             Strength of similarity-based gain
         decay: float
@@ -110,10 +103,14 @@ def update_intimacy_matrix(
         np.ndarray
             Updated intimacy matrix
     """
-    n_agents = len(agents)
+    n_agents = len(agents) - 1  # exclude leader
 
+    if n_agents == 0:
+        raise ValueError("update_intimacy_matrix() received an empty agents list.")
+    if agents[-1].get("role") != "leader":
+        raise ValueError("Expected last agent to be the leader.") 
     if intimacy.ndim != 2 or intimacy.shape[0] != intimacy.shape[1]:
-        raise ValueError("update_intimacy_matrix expected a square 2D intimacy matrix.")
+        raise ValueError("update_intimacy_matrix() expected a square 2D intimacy matrix.")
     if intimacy.shape[0] != n_agents:
         raise ValueError(f"Intimacy matrix size ({intimacy.shape[0]}) does not match number of agents ({n_agents}).")
     if not (0 <= decay <= 1):
@@ -123,18 +120,14 @@ def update_intimacy_matrix(
     if min_w < 0 or max_w < 0 or min_w > max_w:
         raise ValueError("Require 0 <= min_w <= max_w.")
 
-    member_indices = get_member_indices(agents, leader_index)
-    if len(member_indices) == 0:
-        raise ValueError("No members found for member-member intimacy updates.")
-
     A = intimacy.copy()
-    emos = np.array([agents[i]["emotion"] for i in member_indices], dtype=float)
+    emos = np.array([agent["emotion"] for agent in agents[:-1]], dtype=float)
 
     diff = np.abs(emos[:, None] - emos[None,:])
     gain = kappa * (1.0 - diff)
 
     # Update only member-member block
-    member_block = A[np.ix_(member_indices, member_indices)]
+    member_block = A[np.ix_(range(n_agents), range(n_agents))]
     member_block = (1.0 - decay) * member_block + gain
 
     np.fill_diagonal(member_block, 0.0)
@@ -145,7 +138,7 @@ def update_intimacy_matrix(
     if np.any(row_sums <= eps):
         raise ValueError("At least one member intimacy row has near-zero sum after update. Try increasing max_w, decreasing decay, or decreasing min_w.")
 
-    A[np.ix_(member_indices, member_indices)] = member_block / (row_sums + eps)
+    A[np.ix_(range(n_agents), range(n_agents))] = member_block / (row_sums + eps)
 
     return A
 
@@ -157,8 +150,7 @@ def emotional_valence_update(
     agentB_index: int,
     agents: List[dict],
     intimacyMatrix: np.ndarray,
-    absorption_dict: Dict[Tuple[int, int], float],
-    leader_index: int,
+    absorption_dict: Dict[Tuple[int, int], float]
 ) -> Dict[Tuple[int, int], float]:
     """
     Update the emotional valence of two interacting member agents according to the Bosse-style contagion rule. Only member-member interactions considered.
@@ -174,18 +166,13 @@ def emotional_valence_update(
             Full NxN intimacy matrix
         absorption_dict: dict
             Dictionary storing cumulative absolute emotional changes by ordered pair
-        leader_index: int
-            Index of the leader
 
     Returns:
         dict
             Updated absorption dictionary
     """
-    if agentA_index == leader_index or agentB_index == leader_index:
-        raise ValueError("emotional_valence_update received the leader, but only member-member interactions are allowed here.")
-
     if agentA.get("role") != "member" or agentB.get("role") != "member":
-        raise ValueError("emotional_valence_update expects both interacting agents to have role='member'.")
+        raise ValueError("emotional_valence_update() expects both interacting agents to have role='member'.")
 
     if (agentB_index, agentA_index) not in absorption_dict:
         absorption_dict[(agentB_index, agentA_index)] = 0.0
@@ -196,26 +183,22 @@ def emotional_valence_update(
     initial_qA = agentA["emotion"]
     initial_qB = agentB["emotion"]
 
-    member_indices = get_member_indices(agents, leader_index)
-    member_agents = [agents[i] for i in member_indices]
-
-    gamma_A = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentA["index"]] * agentA["delta"] for sender in member_agents if sender is not agentA)
-    gamma_B = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]] * agentB["delta"] for sender in member_agents if sender is not agentB)
+    gamma_A = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentA["index"]] * agentA["delta"] for sender in agents[:-1] if sender is not agentA)
+    gamma_B = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]] * agentB["delta"] for sender in agents[:-1] if sender is not agentB)
 
     eta_A = agentA["amplification"]
     eta_B = agentB["amplification"]
     beta_A = agentA["bias"]
     beta_B = agentB["bias"]
 
-    groupEmos_A = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentA["index"]] for other in member_agents if other is not agentA)
-    groupEmos_B = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentB["index"]] for other in member_agents if other is not agentB)
+    groupEmos_A = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentA["index"]] for other in agents[:-1] if other is not agentA)
+    groupEmos_B = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentB["index"]] for other in agents[:-1] if other is not agentB)
 
     if groupEmos_A == 0 or groupEmos_B == 0:
         raise ValueError("Encountered zero weighted expressiveness while computing q*. Check member-member intimacy normalization and expressiveness values.")
 
-    qstar_A = sum(((sender["expressiveness"]  * intimacyMatrix[sender["index"], agentA["index"]]) / groupEmos_A)  * sender["emotion"] for sender in member_agents if sender is not agentA)
-
-    qstar_B = sum(((sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]]) / groupEmos_B) * sender["emotion"] for sender in member_agents if sender is not agentB)
+    qstar_A = sum(((sender["expressiveness"]  * intimacyMatrix[sender["index"], agentA["index"]]) / groupEmos_A)  * sender["emotion"] for sender in agents[:-1] if sender is not agentA)
+    qstar_B = sum(((sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]]) / groupEmos_B) * sender["emotion"] for sender in agents[:-1] if sender is not agentB)
 
     PI_A = 1 - (1 - qstar_A) * (1 - initial_qA)
     NI_A = qstar_A * initial_qA
@@ -237,8 +220,7 @@ def agent_interaction(
     rng: np.random.Generator,
     agents: List[dict],
     intimacyMatrix: np.ndarray,
-    absorption_dict: Dict[Tuple[int, int], float],
-    leader_index: int,
+    absorption_dict: Dict[Tuple[int, int], float]
 ) -> tuple[list[tuple[int, int]], Dict[Tuple[int, int], float]]:
     """
     Define pairwise member-member interactions based on intimacy probabilities, then apply the emotional contagion update to each selected pair.
@@ -257,23 +239,22 @@ def agent_interaction(
             Full NxN intimacy matrix
         absorption_dict: dict
             Cumulative absorption/change tracker
-        leader_index: int
-            Index of the leader
 
     Returns:
         tuple[list[tuple[int, int]], dict]
             Interacting member index pairs in full-agent indexing and the updated absorption dictionary.
     """
-    n_agents = len(agents)
+    n_agents = len(agents) - 1  # exclude leader
 
+    if agents[-1].get("role") != "leader":
+        raise ValueError("Expected last agent to be the leader.")
     if intimacyMatrix.shape != (n_agents, n_agents):
         raise ValueError(f"Intimacy matrix shape {intimacyMatrix.shape} does not match {n_agents} agents.")
 
-    member_indices = get_member_indices(agents, leader_index)
     buddies: list[tuple[int, int]] = []
 
-    for pos_a, i in enumerate(member_indices):
-        for j in member_indices[pos_a + 1:]:
+    for pos_a, i in enumerate(range(n_agents)):
+        for j in range(pos_a + 1, n_agents):
             interaction_prob = max(intimacyMatrix[i, j], intimacyMatrix[j, i])
 
             if rng.random() < interaction_prob:
@@ -288,8 +269,7 @@ def agent_interaction(
             agentB_index=j,
             agents=agents,
             intimacyMatrix=intimacyMatrix,
-            absorption_dict=absorption_dict,
-            leader_index=leader_index,
+            absorption_dict=absorption_dict
         )
 
     return buddies, absorption_dict

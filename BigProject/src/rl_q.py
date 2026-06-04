@@ -23,7 +23,6 @@ import numpy as np
 # RL ACTION SPACE: 0 = no intervention; 1 = weak; 2 = medium; 3 = strong
 RL_ACTIONS = [0, 1, 2, 3]
 
-
 # HOMOPHILY METRIC
 def compute_homophily_index(agents, intimacy_matrix, tau: float = 0.35):
     """
@@ -49,18 +48,15 @@ def compute_homophily_index(agents, intimacy_matrix, tau: float = 0.35):
     Returns:
       float
     """
-    member_indices = [i for i, agent in enumerate(agents) if agent.get("role") == "member"]
-    emos = np.array([agents[i]["emotion"] for i in member_indices], dtype=float)
-    N = len(emos)
-
-    W = intimacy_matrix[np.ix_(member_indices, member_indices)].copy()
+    emos = np.array([agent["emotion"] for agent in agents[:-1]])
+    W = intimacy_matrix.copy()
     np.fill_diagonal(W, 0.0) # ignore self-ties
 
     similar_weights = []
     dissimilar_weights = []
 
-    for i in range(N):
-        for j in range(N):
+    for i in range(len(emos)):
+        for j in range(len(emos)):
             if i == j:
                 continue
 
@@ -80,7 +76,6 @@ def compute_homophily_index(agents, intimacy_matrix, tau: float = 0.35):
 
     return float(np.mean(similar_weights) - np.mean(dissimilar_weights))
 
-
 # RL STATE
 def compute_state(agents, intimacy_matrix):
     """
@@ -92,13 +87,12 @@ def compute_state(agents, intimacy_matrix):
         np.ndarray shape (3,)
     """
 
-    emos = np.array([agent["emotion"] for agent in agents if agent.get("role") == "member"], dtype=float)
+    emos = np.array([agent["emotion"] for agent in agents[:-1]])
     mean_emotion = emos.mean()
     variance_emotion = emos.var()
     homophily_index = compute_homophily_index(agents, intimacy_matrix)
 
     return np.array([mean_emotion, variance_emotion, homophily_index], dtype=float)
-
 
 # QUALITY FUNCTION
 def compute_quality(agents, w1: float = 1.0, w2: float = 0.5):
@@ -112,15 +106,14 @@ def compute_quality(agents, w1: float = 1.0, w2: float = 0.5):
     Returns:
     float
     """
-    emos = np.array([agent["emotion"] for agent in agents if agent.get("role") == "member"], dtype=float)
+    emos = np.array([agent["emotion"] for agent in agents[:-1]])
     mean_emotion = emos.mean()
     variance_emotion = emos.var()
 
     return (w1 * mean_emotion) - (w2 * variance_emotion)
 
-
 # LEADER ACTION APPLICATION
-def apply_leader_action(action, agents, leader_index, intimacy_matrix):
+def apply_leader_action(action, agents, leader_index, intimacy_matrix=None):
     """
     Apply RL leader intervention.
 
@@ -154,12 +147,10 @@ def apply_leader_action(action, agents, leader_index, intimacy_matrix):
         raise ValueError(f"Unknown RL action: {action}")
 
     leader = agents[leader_index]
-    leader_intimacy = intimacy_matrix[leader_index]
+    #leader_intimacy = intimacy_matrix[leader_index]
 
-    for agent in agents:
-        if agent.get("role") != "member":
-            continue
-        agent["emotion"] += (dampening * (leader["emotion"] - agent["emotion"]) * agent["delta"]* leader_intimacy[agent["index"]])
+    for agent in agents[:-1]:
+        agent["emotion"] += dampening * (leader["emotion"] - agent["emotion"]) * agent["delta"] #* leader_intimacy[agent["index"]])
         agent["emotion"] = np.clip(agent["emotion"], -1, 1)
 
 
@@ -172,7 +163,6 @@ class QLearningLeaderPolicy:
     Action: discrete intervention strength
     Q dimensions: [mean_bin, variance_bin, homophily_bin, action]
     """
-
     def __init__(
         self,
         actions,
@@ -227,6 +217,7 @@ class QLearningLeaderPolicy:
         i_var = self._bin_value(variance_emotion, 0.0, 1.0, self.n_bins_var)
 
         # original approximate homophily range
+        # TODO: verify you want this range
         i_homo = self._bin_value(homophily, 0.0, 0.05, self.n_bins_homo)
 
         return (i_mean, i_var, i_homo)

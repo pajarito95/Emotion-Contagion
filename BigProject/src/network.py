@@ -15,8 +15,8 @@ Structure-specific inputs:
     - intra_strength
     - inter_strength
 - core_periphery:
-    - leader is the core
-    - n_periphery
+    - core_proportion
+    - core_to_core
     - core_to_periph
     - periph_to_core
     - periph_to_periph
