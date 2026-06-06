@@ -249,7 +249,7 @@ grid:
 
   fixed_params:
 
-    population_size: 15
+    population_size: 90
 
     max_iterations: 420
 
@@ -280,7 +280,7 @@ grid:
     strength: 0.5
 
     # community
-    n_communities: 2
+    n_communities: 4
     intra_strength: 0.5
     inter_strength: 0.2
 

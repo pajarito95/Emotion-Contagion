@@ -485,10 +485,10 @@ def run_multiple_simulations(
 
                 min_weight=min_weight,
                 include_leader_ties=include_leader_ties,
-                leader_to_member_cap=leader_to_member_cap,
-                member_to_leader_cap=member_to_leader_cap,
-                leader_to_member_value=leader_to_member_value,
-                member_to_leader_value=member_to_leader_value,
+                # leader_to_member_cap=leader_to_member_cap,
+                # member_to_leader_cap=member_to_leader_cap,
+                # leader_to_member_value=leader_to_member_value,
+                # member_to_leader_value=member_to_leader_value,
 
                 strength=strength,
 
@@ -554,10 +554,10 @@ def run_multiple_simulations(
 
                 min_weight=condition.get("min_weight", 0.01),
                 include_leader_ties=condition.get("include_leader_ties", True),
-                leader_to_member_cap=condition.get("leader_to_member_cap"),
-                member_to_leader_cap=condition.get( "member_to_leader_cap"),
-                leader_to_member_value=condition.get("leader_to_member_value"),
-                member_to_leader_value=condition.get("member_to_leader_value"),
+                # leader_to_member_cap=condition.get("leader_to_member_cap"),
+                # member_to_leader_cap=condition.get( "member_to_leader_cap"),
+                # leader_to_member_value=condition.get("leader_to_member_value"),
+                # member_to_leader_value=condition.get("member_to_leader_value"),
 
                 strength=condition.get("strength"),
 

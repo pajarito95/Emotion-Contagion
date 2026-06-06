@@ -50,6 +50,9 @@ def _validate_common_inputs(
     if leader_index is None:
         raise ValueError("leader_index must be provided because the leader is part of the shared intimacy matrix.")
 
+    if leader_index != population - 1:
+        raise ValueError(f"leader_index must be the last index in the population list (population - 1), but received {leader_index}.")
+
     if not isinstance(leader_index, int):
         raise TypeError(f"leader_index must be an integer, but received {type(leader_index).__name__}.")
 
@@ -85,7 +88,6 @@ def _community_assignments(rng: np.random.Generator, population: int, n_communit
         raise ValueError(f"n_communities must be at least 2, but received {n_communities}.")
     if n_communities > population:
         raise ValueError(f"n_communities={n_communities} cannot exceed population={population}.")
-
     base = population // n_communities
     remainder = population % n_communities
     sizes = [base + (1 if i < remainder else 0) for i in range(n_communities)]
@@ -101,7 +103,7 @@ def _community_assignments(rng: np.random.Generator, population: int, n_communit
 
     return assignments
 
-def _core_periphery_assignments(rng: np.random.Generator, population: int, core_proportion: float) -> np.ndarray:
+def _core_periphery_assignments(rng: np.random.Generator, population: int, core_proportion: float, leader_index: int, include_leader_ties: bool = False) -> np.ndarray:
     """
     Create random core-periphery assignments.
 
@@ -110,11 +112,20 @@ def _core_periphery_assignments(rng: np.random.Generator, population: int, core_
     - 0 = periphery
     """
     assert 0 <= core_proportion <= 1
+    
     core_size = max(1, round(population * core_proportion))
-    core_indices = rng.choice(population, size=core_size, replace=False)
-
     assignments = np.zeros(population, dtype=int)
-    assignments[core_indices] = 1
+
+    if include_leader_ties:
+        assignments[leader_index] = 1
+        remaining_core = core_size - 1
+        if remaining_core > 0:
+            member_indices = np.arange(population - 1)
+            extra_core = rng.choice(member_indices, size=remaining_core, replace=False)
+            assignments[extra_core] = 1
+    else:
+        core_indices = rng.choice(population, size=core_size, replace=False)
+        assignments[core_indices] = 1
 
     return assignments
 
@@ -124,6 +135,7 @@ def create_intimacy_matrix(
     structure: str,
     min_weight: float = 0.01,
     leader_index: Optional[int] = None,
+    include_leader_ties: bool = False,
     strength: Optional[float] = None,
     n_communities: Optional[int] = None,
     intra_strength: Optional[float] = None,
@@ -148,6 +160,8 @@ def create_intimacy_matrix(
             Minimum raw tie weight before normalization
         leader_index : int
             Index of the leader in the shared population list
+        include_leader_ties : bool
+            Whether to include the leader in the network assignments and allow ties between the leader and members
 
     Random-specific parameters:
         strength : float
@@ -183,18 +197,18 @@ def create_intimacy_matrix(
                 - core_periphery: 1 = core, 0 = periphery
     """
     _validate_common_inputs(population=population, structure=structure, min_weight=min_weight, leader_index=leader_index)
-
-    W = np.zeros((population, population), dtype=float)
+    network_population = (population if include_leader_ties else population - 1)
+    W = np.zeros((network_population, network_population), dtype=float)
 
     if structure == "random":
         if strength is None:
             raise ValueError("For structure='random', you must provide strength.")
         _validate_strength(strength, "strength")
 
-        assignments = np.zeros(population, dtype=int)
+        assignments = np.zeros(network_population, dtype=int)
 
-        for i in range(population):
-            for j in range(population):
+        for i in range(network_population):
+            for j in range(network_population):
                 if i == j:
                     continue
                 W[i, j] = _sample_weight(rng=rng, upper_bound=strength, min_weight=min_weight)
@@ -213,10 +227,10 @@ def create_intimacy_matrix(
         _validate_strength(intra_strength, "intra_strength")
         _validate_strength(inter_strength, "inter_strength")
 
-        assignments = _community_assignments(rng=rng, population=population, n_communities=n_communities,)
+        assignments = _community_assignments(rng=rng, population=network_population, n_communities=n_communities)
 
-        for i in range(population):
-            for j in range(population):
+        for i in range(network_population):
+            for j in range(network_population):
                 if i == j:
                     continue
                 upper = intra_strength if assignments[i] == assignments[j] else inter_strength
@@ -242,10 +256,10 @@ def create_intimacy_matrix(
         _validate_strength(periph_to_core, "periph_to_core")
         _validate_strength(periph_to_periph, "periph_to_periph")
 
-        assignments = _core_periphery_assignments(rng=rng, population=population, core_proportion=core_proportion)
+        assignments = _core_periphery_assignments(rng=rng, population=network_population, core_proportion=core_proportion, leader_index=leader_index, include_leader_ties=include_leader_ties)
 
-        for i in range(population):
-            for j in range(population):
+        for i in range(network_population):
+            for j in range(network_population):
                 if i == j:
                     continue
 

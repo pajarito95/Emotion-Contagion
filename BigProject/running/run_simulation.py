@@ -88,7 +88,7 @@ def run_simulation(
     leader_style: str,
     max_iterations: int,
     min_weight: float = 0.01,
-    # include_leader_ties: bool = True,
+    include_leader_ties: bool = True,
     # leader_to_member_cap: Optional[float] = None,
     # member_to_leader_cap: Optional[float] = None,
     # leader_to_member_value: Optional[float] = None,
@@ -114,7 +114,8 @@ def run_simulation(
     rl_gamma: float = 0.95,
     rl_epsilon_start: float = 0.3,
     rl_epsilon_end: float = 0.05,
-    rl_epsilon_decay_steps: int = 2000
+    rl_epsilon_decay_steps: int = 2000,
+    rl_actions: Optional[List[int]] = [0, 1, 2, 3]
 ) -> SimulationResults:
     """
     Run one complete simulation.
@@ -133,7 +134,7 @@ def run_simulation(
         structure=structure,
         leader_style=leader_style,
         min_weight=min_weight,
-        # include_leader_ties=include_leader_ties,
+        include_leader_ties=include_leader_ties,
         # leader_to_member_cap=leader_to_member_cap,
         # member_to_leader_cap=member_to_leader_cap,
         # leader_to_member_value=leader_to_member_value,
@@ -219,7 +220,7 @@ def run_simulation(
         rl_actions.append(action_t)
 
         # MEMBER INTERACTIONS
-        buddies, absorption_dict = agent_interaction(rng=rng, agents=state.agents, intimacyMatrix=state.intimacy_matrix, absorption_dict=absorption_dict)
+        buddies, absorption_dict = agent_interaction(rng=rng, agents=state.agents, include_leader_ties=include_leader_ties, intimacyMatrix=state.intimacy_matrix, absorption_dict=absorption_dict)
         buddies_per_timestep.append(buddies)
         interactions_per_timestep.append(len(buddies))
 
@@ -241,6 +242,7 @@ def run_simulation(
                 avg_emotional_valence=avg_emotional_valence,
                 agents=state.agents,
                 leader_index=state.leader_index,
+                include_leader_ties=include_leader_ties,
                 intimacy_matrix=state.intimacy_matrix,
                 dampening=dampening,
             )
@@ -252,6 +254,7 @@ def run_simulation(
         if adaptive_intimacy:
             state.intimacy_matrix = update_intimacy_matrix(
                 intimacy=state.intimacy_matrix,
+                include_leader_ties=include_leader_ties,
                 agents=state.agents,
                 kappa=kappa,
                 decay=decay,

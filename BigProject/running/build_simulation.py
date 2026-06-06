@@ -60,7 +60,8 @@ def build_initial_intimacy_matrix(
     population_size: int,
     structure: str,
     min_weight: float = 0.01,
-    # include_leader_ties: bool = True,
+    leader_index: int = -1,
+    include_leader_ties: bool = True,
     # leader_to_member_cap: Optional[float] = None,
     # member_to_leader_cap: Optional[float] = None,
     # leader_to_member_value: Optional[float] = None,
@@ -81,7 +82,9 @@ def build_initial_intimacy_matrix(
     """
     intimacy_matrix, assignments = create_intimacy_matrix(
         rng=rng,
-        population=population_size - 1,
+        population=population_size,
+        leader_index=leader_index,
+        include_leader_ties=include_leader_ties,
         structure=structure,
         min_weight=min_weight,
         strength=strength,
@@ -92,7 +95,7 @@ def build_initial_intimacy_matrix(
         core_to_core=core_to_core,
         core_to_periph=core_to_periph,
         periph_to_core=periph_to_core,
-        periph_to_periph=periph_to_periph,
+        periph_to_periph=periph_to_periph
     )
 
     return intimacy_matrix, assignments
@@ -103,7 +106,7 @@ def initialize_simulation(
     structure: str,
     leader_style: str,
     min_weight: float = 0.01,
-    # include_leader_ties: bool = True,
+    include_leader_ties: bool = True,
     # leader_to_member_cap: Optional[float] = None,
     # member_to_leader_cap: Optional[float] = None,
     # leader_to_member_value: Optional[float] = None,
@@ -143,7 +146,8 @@ def initialize_simulation(
         population_size=population_size,
         structure=structure,
         min_weight=min_weight,
-        # include_leader_ties=include_leader_ties,
+        leader_index=leader_index,
+        include_leader_ties=include_leader_ties,
         # leader_to_member_cap=leader_to_member_cap,
         # member_to_leader_cap=member_to_leader_cap,
         # leader_to_member_value=leader_to_member_value,
@@ -163,7 +167,8 @@ def initialize_simulation(
         "population_size": population_size,
         "structure": structure,
         "leader_style": leader_style,
-        # "include_leader_ties": include_leader_ties,
+        "leader_index": leader_index,
+        "include_leader_ties": include_leader_ties,
         # "leader_to_member_cap": leader_to_member_cap,
         # "member_to_leader_cap": member_to_leader_cap,
         # "leader_to_member_value": leader_to_member_value,

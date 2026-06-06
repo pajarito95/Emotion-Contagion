@@ -68,6 +68,7 @@ def avgEmotion(agents: List[dict]) -> float:
 
 def update_intimacy_matrix(
     intimacy: np.ndarray,
+    include_leader_ties: bool,
     agents: List[dict],
     kappa: float,
     decay: float,
@@ -103,8 +104,7 @@ def update_intimacy_matrix(
         np.ndarray
             Updated intimacy matrix
     """
-    n_agents = len(agents) - 1  # exclude leader
-
+    n_agents = (len(agents) if include_leader_ties else len(agents) - 1)
     if n_agents == 0:
         raise ValueError("update_intimacy_matrix() received an empty agents list.")
     if agents[-1].get("role") != "leader":
@@ -127,7 +127,8 @@ def update_intimacy_matrix(
     gain = kappa * (1.0 - diff)
 
     # Update only member-member block
-    member_block = A[np.ix_(range(n_agents), range(n_agents))]
+    n_members = len(agents) - 1
+    member_block = A[np.ix_(range(n_members), range(n_members))]
     member_block = (1.0 - decay) * member_block + gain
 
     np.fill_diagonal(member_block, 0.0)
@@ -138,7 +139,7 @@ def update_intimacy_matrix(
     if np.any(row_sums <= eps):
         raise ValueError("At least one member intimacy row has near-zero sum after update. Try increasing max_w, decreasing decay, or decreasing min_w.")
 
-    A[np.ix_(range(n_agents), range(n_agents))] = member_block / (row_sums + eps)
+    A[np.ix_(range(n_members), range(n_members))] = member_block / (row_sums + eps)
 
     return A
 
@@ -220,7 +221,8 @@ def agent_interaction(
     rng: np.random.Generator,
     agents: List[dict],
     intimacyMatrix: np.ndarray,
-    absorption_dict: Dict[Tuple[int, int], float]
+    absorption_dict: Dict[Tuple[int, int], float],
+    include_leader_ties: bool,
 ) -> tuple[list[tuple[int, int]], Dict[Tuple[int, int], float]]:
     """
     Define pairwise member-member interactions based on intimacy probabilities, then apply the emotional contagion update to each selected pair.
@@ -244,8 +246,7 @@ def agent_interaction(
         tuple[list[tuple[int, int]], dict]
             Interacting member index pairs in full-agent indexing and the updated absorption dictionary.
     """
-    n_agents = len(agents) - 1  # exclude leader
-
+    n_agents = (len(agents) if include_leader_ties else len(agents) - 1)
     if agents[-1].get("role") != "leader":
         raise ValueError("Expected last agent to be the leader.")
     if intimacyMatrix.shape != (n_agents, n_agents):
@@ -253,8 +254,9 @@ def agent_interaction(
 
     buddies: list[tuple[int, int]] = []
 
-    for pos_a, i in enumerate(range(n_agents)):
-        for j in range(pos_a + 1, n_agents):
+    buddies_agents = len(agents) - 1
+    for pos_a, i in enumerate(range(buddies_agents)):
+        for j in range(pos_a + 1, buddies_agents):
             interaction_prob = max(intimacyMatrix[i, j], intimacyMatrix[j, i])
 
             if rng.random() < interaction_prob:

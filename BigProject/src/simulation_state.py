@@ -66,10 +66,11 @@ class SimulationState:
         if self.intimacy_matrix.ndim != 2:
             raise ValueError(f"intimacy_matrix must be 2D, but received shape {self.intimacy_matrix.shape}.")
 
-        n_agents = len(self.agents)
-        expected_shape = (n_agents, n_agents)
+        include_leader_ties = self.metadata.get("include_leader_ties", False)
+        network_size = (len(self.agents) if include_leader_ties else len(self.agents) - 1)
+        expected_shape = (network_size, network_size)
         if self.intimacy_matrix.shape != expected_shape:
-            raise ValueError(f"intimacy_matrix shape {self.intimacy_matrix.shape} does not match the required shape {expected_shape} for {n_agents} agents.")
+            raise ValueError(f"intimacy_matrix shape {self.intimacy_matrix.shape} does not match the required shape {expected_shape} for {network_size} agents and include_leader_ties={include_leader_ties}.")
 
         leader = self.agents[self.leader_index]
         role = leader.get("role", None)

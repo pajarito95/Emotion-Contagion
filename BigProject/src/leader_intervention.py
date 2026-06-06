@@ -58,7 +58,7 @@ def validate_leader_index(agents: List[dict], leader_index: int) -> None:
     if leader_index != len(agents) - 1:
         raise ValueError(f"leader_index={leader_index} is expected to be the last index in agents list (index {len(agents) - 1}).")
 
-def validate_intimacy_matrix(intimacy_matrix: np.ndarray, agents: List[dict]) -> None:
+def validate_intimacy_matrix(intimacy_matrix: np.ndarray, agents: List[dict], include_leader_ties: bool) -> None:
     """
     Validate intimacy matrix dimensions
     """
@@ -68,19 +68,9 @@ def validate_intimacy_matrix(intimacy_matrix: np.ndarray, agents: List[dict]) ->
     if intimacy_matrix.ndim != 2:
         raise ValueError(f"intimacy_matrix must be 2D, but received shape {intimacy_matrix.shape}.")
 
-    n_agents = len(agents) - 1  # exclude leader
-
+    n_agents = (len(agents) if include_leader_ties else len(agents) - 1)
     if intimacy_matrix.shape != (n_agents, n_agents):
         raise ValueError(f"intimacy_matrix shape {intimacy_matrix.shape} does not match expected shape ({n_agents}, {n_agents}).")
-
-# Helpers
-# def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
-#     """
-#     Return all non-leader member indices
-#     """
-#     validate_leader_index(agents, leader_index)
-
-#     return [i for i, agent in enumerate(agents) if i != leader_index and agent.get("role") == "member"]
 
 def get_threshold_mode(style: str) -> str:
     """
@@ -151,6 +141,7 @@ def apply_leader_intervention(
     agents: List[dict],
     leader_index: int,
     intimacy_matrix: np.ndarray,
+    include_leader_ties: bool,
     dampening: float = 0.08,
     clip_min: float = -1.0,
     clip_max: float = 1.0,
@@ -162,7 +153,7 @@ def apply_leader_intervention(
         dampening * (leader_emotion - member_emotion) * member_delta
     """
     validate_leader_index(agents, leader_index)
-    validate_intimacy_matrix(intimacy_matrix, agents)
+    validate_intimacy_matrix(intimacy_matrix, agents, include_leader_ties)
 
     if dampening < 0:
         raise ValueError(f"dampening must be nonnegative, but received {dampening}.")
@@ -197,6 +188,7 @@ def run_leader_intervention(
     avg_emotional_valence: float,
     agents: List[dict],
     leader_index: int,
+    include_leader_ties: bool,
     intimacy_matrix: np.ndarray,
     dampening: float = 0.08,
     clip_min: float = -1.0,
@@ -220,7 +212,7 @@ def run_leader_intervention(
     """
     validate_leader_style(style)
     validate_leader_index(agents, leader_index)
-    validate_intimacy_matrix(intimacy_matrix, agents)
+    validate_intimacy_matrix(intimacy_matrix, agents, include_leader_ties)
 
     if force_intervention:
         intervened = True
