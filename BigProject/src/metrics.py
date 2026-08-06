@@ -28,8 +28,6 @@ def plot_sentiment_evolution(results, save_path: Optional[str | Path] = None, sh
     if n_timesteps == 0:
         raise ValueError("results.emotion_history is empty, so there is nothing to plot.")
 
-    n_agents = len(emotion_history[0])
-
     # Plot individual member-only trajectories in grey
     member_indices = [i for i, agent in enumerate(results.state.agents) if agent.get("role") == "member"]
     for agent_index in member_indices:

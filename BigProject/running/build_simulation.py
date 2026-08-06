@@ -59,6 +59,7 @@ def build_initial_intimacy_matrix(
     rng: np.random.Generator,
     population_size: int,
     structure: str,
+    directed: bool,
     min_weight: float = 0.01,
     leader_index: int = -1,
     include_leader_ties: bool = True,
@@ -83,10 +84,11 @@ def build_initial_intimacy_matrix(
     intimacy_matrix, assignments = create_intimacy_matrix(
         rng=rng,
         population=population_size,
+        structure=structure,
+        directed=directed,
+        min_weight=min_weight,
         leader_index=leader_index,
         include_leader_ties=include_leader_ties,
-        structure=structure,
-        min_weight=min_weight,
         strength=strength,
         n_communities=n_communities,
         intra_strength=intra_strength,
@@ -103,7 +105,12 @@ def build_initial_intimacy_matrix(
 def initialize_simulation(
     rng: np.random.Generator,
     population_size: int,
+    susceptibility: float,
+    expressiveness: float,
+    amplification: float,
+    bias: float,
     structure: str,
+    directed: bool,
     leader_style: str,
     min_weight: float = 0.01,
     include_leader_ties: bool = True,
@@ -133,7 +140,7 @@ def initialize_simulation(
     validate_structure(structure)
     validate_style(leader_style)
 
-    agents = make_agents(rng, population_size)
+    agents = make_agents(rng, population_size, susceptibility, expressiveness, amplification, bias)
 
     if len(agents) != population_size:
         raise ValueError(f"make_agents returned {len(agents)} agents, but population_size={population_size} was requested.")
@@ -145,6 +152,7 @@ def initialize_simulation(
         rng=rng,
         population_size=population_size,
         structure=structure,
+        directed=directed,
         min_weight=min_weight,
         leader_index=leader_index,
         include_leader_ties=include_leader_ties,
@@ -166,6 +174,7 @@ def initialize_simulation(
     metadata = {
         "population_size": population_size,
         "structure": structure,
+        "directed": directed,
         "leader_style": leader_style,
         "leader_index": leader_index,
         "include_leader_ties": include_leader_ties,

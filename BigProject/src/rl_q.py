@@ -150,7 +150,7 @@ def apply_leader_action(action, agents, leader_index, intimacy_matrix=None):
     #leader_intimacy = intimacy_matrix[leader_index]
 
     for agent in agents[:-1]:
-        agent["emotion"] += dampening * (leader["emotion"] - agent["emotion"]) * agent["delta"] #* leader_intimacy[agent["index"]])
+        agent["emotion"] += dampening * (leader["emotion"] - agent["emotion"]) * agent["susceptibility"] #* leader_intimacy[agent["index"]])
         agent["emotion"] = np.clip(agent["emotion"], -1, 1)
 
 

@@ -175,7 +175,7 @@ def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
         condition_grid = grid_cfg.get("condition_grid", {})
         fixed_params = grid_cfg.get("fixed_params", {})
         condition_name_keys = grid_cfg.get("condition_name_keys")
-        batch = run_multiple_simulations(seeds=seeds, condition_grid=condition_grid, fixed_params=fixed_params, condition_name_keys=condition_name_keys, **output_kwargs,)
+        batch = run_multiple_simulations(seeds=seeds, condition_grid=condition_grid, fixed_params=fixed_params, condition_name_keys=condition_name_keys, **output_kwargs)
     else:
         raise ValueError(f"Unsupported mode {mode!r}. Choose from 'single', 'manual', or 'grid'.")
 
@@ -183,7 +183,7 @@ def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
     return batch
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the emotion contagion ABM from a YAML config file.")
+    parser = argparse.ArgumentParser(description="Run the emotion contagion ABM from .yaml configuration file.")
     parser.add_argument("--config", default="default.yaml", help="Path to the YAML config file.")
     args = parser.parse_args()
 

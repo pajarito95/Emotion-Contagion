@@ -70,7 +70,7 @@ def _validate_adaptive_params(
 
 def _snapshot_initial_conditions(agents: List[dict]) -> pd.DataFrame:
     rows = []
-    keys = ["index", "role", "emotion", "delta", "expressiveness", "amplification", "bias", "emotionManagementAbility", "interventionThreshold"]
+    keys = ["index", "role", "emotion", "susceptibility", "expressiveness", "amplification", "bias", "emotionManagementAbility", "interventionThreshold"]
     for agent in agents:
         row = {key: agent.get(key, None) for key in keys}
         rows.append(row)
@@ -84,6 +84,11 @@ def run_simulation(
     seed: int,
     run_id: Any,
     population_size: int,
+    susceptibility: float,
+    expressiveness: float,
+    amplification: float,
+    bias: float,
+    directed: bool,
     structure: str,
     leader_style: str,
     max_iterations: int,
@@ -131,7 +136,12 @@ def run_simulation(
     state = initialize_simulation(
         rng=rng,
         population_size=population_size,
+        susceptibility=susceptibility,
+        expressiveness=expressiveness,
+        amplification=amplification,
+        bias=bias,
         structure=structure,
+        directed=directed,
         leader_style=leader_style,
         min_weight=min_weight,
         include_leader_ties=include_leader_ties,

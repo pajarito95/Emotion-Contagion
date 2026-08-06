@@ -150,7 +150,7 @@ def apply_leader_intervention(
     Apply a leader intervention to member agents.
 
     Each member is pulled toward the leader's emotion: 
-        dampening * (leader_emotion - member_emotion) * member_delta
+        dampening * (leader_emotion - member_emotion) * member_susceptibility
     """
     validate_leader_index(agents, leader_index)
     validate_intimacy_matrix(intimacy_matrix, agents, include_leader_ties)
@@ -168,7 +168,7 @@ def apply_leader_intervention(
     for member_index in range(len(agents) - 1):  # exclude leader
         member = agents[member_index]
 
-        required_keys = {"emotion", "delta", "index", "role"}
+        required_keys = {"emotion", "susceptibility", "index", "role"}
         missing = required_keys - set(member.keys())
         if missing:
             raise KeyError(f"Member agent at index {member_index} is missing required keys: {sorted(missing)}.")
@@ -177,7 +177,7 @@ def apply_leader_intervention(
             raise ValueError(f"Member at list position {member_index} has index={member['index']} but expected {member_index}.")
 
         #influence_weight = float(intimacy_matrix[leader_index, member_index])
-        member["emotion"] += dampening * (leader["emotion"] - member["emotion"]) * member["delta"] #* influence_weight
+        member["emotion"] += dampening * (leader["emotion"] - member["emotion"]) * member["susceptibility"] #* influence_weight
         member["emotion"] = float(np.clip(member["emotion"], clip_min, clip_max))
 
     return agents

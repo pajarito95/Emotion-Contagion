@@ -184,8 +184,8 @@ def emotional_valence_update(
     initial_qA = agentA["emotion"]
     initial_qB = agentB["emotion"]
 
-    gamma_A = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentA["index"]] * agentA["delta"] for sender in agents[:-1] if sender is not agentA)
-    gamma_B = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]] * agentB["delta"] for sender in agents[:-1] if sender is not agentB)
+    gamma_A = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentA["index"]] * agentA["susceptibility"] for sender in agents[:-1] if sender is not agentA)
+    gamma_B = sum(sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]] * agentB["susceptibility"] for sender in agents[:-1] if sender is not agentB)
 
     eta_A = agentA["amplification"]
     eta_B = agentB["amplification"]
@@ -197,9 +197,14 @@ def emotional_valence_update(
 
     if groupEmos_A == 0 or groupEmos_B == 0:
         raise ValueError("Encountered zero weighted expressiveness while computing q*. Check member-member intimacy normalization and expressiveness values.")
+ 
+    # OLD: Weighted average of other members' emotions
+    # qstar_A = sum(((sender["expressiveness"]  * intimacyMatrix[sender["index"], agentA["index"]]) / groupEmos_A)  * sender["emotion"] for sender in agents[:-1] if sender is not agentA)
+    # qstar_B = sum(((sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]]) / groupEmos_B) * sender["emotion"] for sender in agents[:-1] if sender is not agentB)
 
-    qstar_A = sum(((sender["expressiveness"]  * intimacyMatrix[sender["index"], agentA["index"]]) / groupEmos_A)  * sender["emotion"] for sender in agents[:-1] if sender is not agentA)
-    qstar_B = sum(((sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]]) / groupEmos_B) * sender["emotion"] for sender in agents[:-1] if sender is not agentB)
+    # NEW: Plain unweighted average of other members' emotions, excluding self, e_{N(i)}
+    qstar_A = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentA) / (len(agents) - 2)  # minus 2 because we exclude agentA and the leader
+    qstar_B = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentB) / (len(agents) - 2)
 
     PI_A = 1 - (1 - qstar_A) * (1 - initial_qA)
     NI_A = qstar_A * initial_qA

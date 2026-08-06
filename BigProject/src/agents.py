@@ -46,21 +46,26 @@ def validate_style(style: str) -> None:
     if style not in VALID_STYLES:
         raise ValueError(f"Invalid leader style {style!r}. Choose from: {sorted(VALID_STYLES)}.")
 
-def make_agents(rng: np.random.Generator, population_size: int) -> List[Dict[str, Any]]:
+def make_agents(rng: np.random.Generator, 
+                population_size: int, 
+                susceptibility: float, 
+                expressiveness: float, 
+                amplification: float, 
+                bias: float) -> List[Dict[str, Any]]:
     """
     Create the initial population of agents. Each agent is initialized with member-style parameters. One of these agents may later be reconfigured as the leader.
 
     Member parameters:
     emotion : float
         Initial emotional valence in approximately [-0.5, 0.5], sampled using a shifted beta distribution to skew more negative
-    delta : float
-        Susceptibility to influence
+    susceptibility : float
+        Ease of being influenced
     expressiveness : float
         Degree to which an agent outwardly expresses emotion
     amplification : float
-        Amplification-related parameter used in the Bosse-style update
+        How much agent amplifies/exaggerates/magnifies their emotion during sharing
     bias : float
-        Bias-related parameter used in the Bosse-style update
+        How much agent is biased toward similar emotions
 
     NOTE: May want to reconsider the beta distribution
 
@@ -76,13 +81,14 @@ def make_agents(rng: np.random.Generator, population_size: int) -> List[Dict[str
     """
     validate_population_size(population_size)
     agents = []
+    # UPDATE: set fixed values (except emotion); pick values in default.yaml file
     for _ in range(population_size):
         agent = {
             "emotion": -0.5 + rng.beta(2, 5),
-            "delta": rng.uniform(0.0, 1.0),
-            "expressiveness": rng.uniform(0.0, 1.0),
-            "amplification": rng.uniform(0.0, 1.0),
-            "bias": rng.uniform(0.0, 1.0),
+            "susceptibility": susceptibility,
+            "expressiveness": expressiveness,
+            "amplification": amplification,
+            "bias": bias
         }
         agents.append(agent)
     return agents
@@ -112,7 +118,7 @@ def configure_leader(leader: Dict[str, Any], style: str) -> Dict[str, Any]:
         raise TypeError(f"leader must be a dictionary, but received {type(leader).__name__}.")
 
     # Remove member-specific parameters if present
-    for key in ["delta", "expressiveness", "amplification", "bias"]:
+    for key in ["susceptibility", "expressiveness", "amplification", "bias"]:
         if key in leader:
             del leader[key]
 

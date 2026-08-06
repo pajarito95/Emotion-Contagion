@@ -23,18 +23,12 @@ Structure-specific inputs:
 """
 
 from __future__ import annotations
-
 from typing import Optional
 import numpy as np
 
 VALID_STRUCTURES = {"community", "random", "core_periphery"}
 
-def _validate_common_inputs(
-    population: int,
-    structure: str,
-    min_weight: float,
-    leader_index: Optional[int],
-) -> None:
+def _validate_common_inputs(population: int, structure: str, min_weight: float, leader_index: Optional[int]) -> None:
     if not isinstance(population, int):
         raise TypeError(f"population must be an integer, but received {type(population).__name__}.")
 
@@ -62,19 +56,25 @@ def _validate_common_inputs(
 def _validate_strength(value: float, name: str) -> None:
     if not isinstance(value, (int, float)):
         raise TypeError(f"{name} must be numeric, but received {type(value).__name__}.")
+    
     if not (0 <= value <= 1):
         raise ValueError(f"{name} must be between 0 and 1, but received {value}.")
 
+# UPDATED
 def _normalize_rows(matrix: np.ndarray) -> np.ndarray:
-    row_sums = matrix.sum(axis=1, keepdims=True)
+    row_sums = np.abs(matrix).sum(axis=1, keepdims=True)
     if np.any(row_sums <= 0):
-        raise ValueError("At least one row of the intimacy matrix has zero sum before normalization. Increase tie weights or avoid zeroing an entire row.")
+        raise ValueError("At least one row of the intimacy matrix has zero absolute sum before normalization. Check network generation parameters.")
     return matrix / row_sums
 
-def _sample_weight(rng: np.random.Generator, upper_bound: float, min_weight: float) -> float:
-    if upper_bound < min_weight:
-        raise ValueError(f"Upper bound {upper_bound} is smaller than min_weight {min_weight}. Either increase the upper bound or decrease min_weight.")
-    return float(rng.uniform(min_weight, upper_bound))
+# UPDATED
+def _sample_signed_weight(rng: np.random.Generator, lower_bound: float = -1.0, upper_bound: float = 1.0) -> float:
+    if not (-1.0 <= lower_bound <= 1.0 and -1.0 <= upper_bound <= 1.0):
+        raise ValueError(f"Signed weights must stay within [-1, 1], but received [{lower_bound}, {upper_bound}].")
+    
+    weight = float(rng.normal(loc=0.5, scale=0.25))  # normal distribution centered at 0.5 with std dev of 0.25, no clipping
+    # weight = np.clip(weight, -1.0, 1.0)
+    return weight
 
 def _community_assignments(rng: np.random.Generator, population: int, n_communities: int) -> np.ndarray:
     """
@@ -84,10 +84,13 @@ def _community_assignments(rng: np.random.Generator, population: int, n_communit
     """
     if not isinstance(n_communities, int):
         raise TypeError(f"n_communities must be an integer, but received {type(n_communities).__name__}.")
+    
     if n_communities < 2:
         raise ValueError(f"n_communities must be at least 2, but received {n_communities}.")
+    
     if n_communities > population:
         raise ValueError(f"n_communities={n_communities} cannot exceed population={population}.")
+    
     base = population // n_communities
     remainder = population % n_communities
     sizes = [base + (1 if i < remainder else 0) for i in range(n_communities)]
@@ -112,10 +115,9 @@ def _core_periphery_assignments(rng: np.random.Generator, population: int, core_
     - 0 = periphery
     """
     assert 0 <= core_proportion <= 1
-    
+
     core_size = max(1, round(population * core_proportion))
     assignments = np.zeros(population, dtype=int)
-
     if include_leader_ties:
         assignments[leader_index] = 1
         remaining_core = core_size - 1
@@ -129,10 +131,39 @@ def _core_periphery_assignments(rng: np.random.Generator, population: int, core_
 
     return assignments
 
+def _iter_pairs(n: int):
+    """
+    Iterate over each unordered pair of distince nodes once
+    """
+    for i in range(n):
+        for j in range(i+1,n):
+            yield i,j
+
+def no_lonelies(W: np.ndarray, rng: np.random.Generator, directed: bool) -> None:
+    """
+    Ensure every node has at least one outgoing connection
+    """
+    n = W.shape[0]
+    for i in range(n):
+        if np.any(W[i] != 0):
+            continue
+
+        candidates = [j for j in range(n) if j != i]
+        j = rng.choice(candidates)
+
+        if directed:
+            W[i, j] = _sample_signed_weight(rng)
+            W[j, i] = _sample_signed_weight(rng)
+        else:
+            value = _sample_signed_weight(rng)
+            W[i, j] = value
+            W[j, i] = value
+
 def create_intimacy_matrix(
     rng: np.random.Generator,
     population: int,
     structure: str,
+    directed: bool,
     min_weight: float = 0.01,
     leader_index: Optional[int] = None,
     include_leader_ties: bool = False,
@@ -147,7 +178,7 @@ def create_intimacy_matrix(
     periph_to_periph: Optional[float] = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Create an asymmetric, row-normalized intimacy matrix over all agents.
+    Create a row-normalized intimacy matrix over all agents.
 
     Parameters:
         rng : np.random.Generator
@@ -197,49 +228,25 @@ def create_intimacy_matrix(
                 - core_periphery: 1 = core, 0 = periphery
     """
     _validate_common_inputs(population=population, structure=structure, min_weight=min_weight, leader_index=leader_index)
-    network_population = (population if include_leader_ties else population - 1)
+    network_population = population if include_leader_ties else population - 1
     W = np.zeros((network_population, network_population), dtype=float)
 
     if structure == "random":
         if strength is None:
             raise ValueError("For structure='random', you must provide strength.")
         _validate_strength(strength, "strength")
-
         assignments = np.zeros(network_population, dtype=int)
-
-        for i in range(network_population):
-            for j in range(network_population):
-                if i == j:
-                    continue
-                W[i, j] = _sample_weight(rng=rng, upper_bound=strength, min_weight=min_weight)
-
-        np.fill_diagonal(W, 0.0)
-        return _normalize_rows(W), assignments
-
-    if structure == "community":
+    elif structure == "community":
         if n_communities is None:
             raise ValueError("For structure='community', you must provide n_communities.")
         if intra_strength is None:
             raise ValueError("For structure='community', you must provide intra_strength.")
         if inter_strength is None:
             raise ValueError("For structure='community', you must provide inter_strength.")
-
         _validate_strength(intra_strength, "intra_strength")
         _validate_strength(inter_strength, "inter_strength")
-
         assignments = _community_assignments(rng=rng, population=network_population, n_communities=n_communities)
-
-        for i in range(network_population):
-            for j in range(network_population):
-                if i == j:
-                    continue
-                upper = intra_strength if assignments[i] == assignments[j] else inter_strength
-                W[i, j] = _sample_weight(rng=rng, upper_bound=upper, min_weight=min_weight)
-
-        np.fill_diagonal(W, 0.0)
-        return _normalize_rows(W), assignments
-
-    if structure == "core_periphery":
+    elif structure == "core_periphery":
         if core_proportion is None:
             raise ValueError("For structure='core_periphery', you must provide core_proportion.")
         if core_to_core is None:
@@ -250,34 +257,43 @@ def create_intimacy_matrix(
             raise ValueError("For structure='core_periphery', you must provide periph_to_core.")
         if periph_to_periph is None:
             raise ValueError("For structure='core_periphery', you must provide periph_to_periph.")
-
         _validate_strength(core_to_core, "core_to_core")
         _validate_strength(core_to_periph, "core_to_periph")
         _validate_strength(periph_to_core, "periph_to_core")
         _validate_strength(periph_to_periph, "periph_to_periph")
-
         assignments = _core_periphery_assignments(rng=rng, population=network_population, core_proportion=core_proportion, leader_index=leader_index, include_leader_ties=include_leader_ties)
+    else:
+        raise ValueError(f"Unhandled structure {structure!r}. This should not happen after validation.")
 
-        for i in range(network_population):
-            for j in range(network_population):
-                if i == j:
-                    continue
+    for i, j in _iter_pairs(network_population):
+        if structure == "random":
+            edge_probability = strength
+        elif structure == "community":
+            same_community = assignments[i] == assignments[j]
+            edge_probability = intra_strength if same_community else inter_strength
+# NOTE -- something here might be fishy...
+        else:
+            from_core = assignments[i] == 1
+            to_core = assignments[j] == 1
+            if from_core and to_core:
+                edge_probability = core_to_core
+            elif from_core and not to_core:
+                edge_probability = core_to_periph
+            elif not from_core and to_core:
+                edge_probability = periph_to_core
+            else:
+                edge_probability = periph_to_periph
 
-                from_core = assignments[i] == 1
-                to_core = assignments[j] == 1
+        if rng.random() < edge_probability:
+            if directed:
+                W[i,j] = _sample_signed_weight(rng=rng, lower_bound=-1.0, upper_bound=1.0)
+                W[j,i] = _sample_signed_weight(rng=rng, lower_bound=-1.0, upper_bound=1.0)
+            else:
+                value = _sample_signed_weight(rng=rng, lower_bound=-1.0, upper_bound=1.0)
+                W[i,j] = value
+                W[j,i] = value
 
-                if from_core and to_core:
-                    upper = core_to_core
-                elif from_core and not to_core:
-                    upper = core_to_periph
-                elif not from_core and to_core:
-                    upper = periph_to_core
-                elif not from_core and not to_core:
-                    upper = periph_to_periph
+    np.fill_diagonal(W, 0.0)
+    no_lonelies(W, rng, directed)
 
-                W[i, j] = _sample_weight(rng=rng, upper_bound=upper, min_weight=min_weight)
-
-        np.fill_diagonal(W, 0.0)
-        return _normalize_rows(W), assignments
-
-    raise ValueError(f"Unhandled structure {structure!r}. This should not happen after validation.")
+    return _normalize_rows(W), assignments

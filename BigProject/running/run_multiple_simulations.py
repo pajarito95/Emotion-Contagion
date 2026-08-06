@@ -401,17 +401,23 @@ def run_multiple_simulations(
     fixed_params: Optional[Dict[str, Any]] = None,
     condition_name_keys: Optional[Sequence[str]] = None,
 
-    population_size: Optional[int] = None,
-    structure: Optional[str] = None,
-    leader_style: Optional[str] = None,
-    max_iterations: Optional[int] = None,
+    population_size: int = None,
+    susceptibility: float = None,
+    expressiveness: float = None,
+    amplification: float = None,
+    bias: float = None,
+
+    structure: str = None,
+    directed: str = None,
+    leader_style: str = None,
+    max_iterations: int = None,
 
     min_weight: float = 0.01,
     include_leader_ties: bool = True,
-    leader_to_member_cap: Optional[float] = None,
-    member_to_leader_cap: Optional[float] = None,
-    leader_to_member_value: Optional[float] = None,
-    member_to_leader_value: Optional[float] = None,
+    # leader_to_member_cap: Optional[float] = None,
+    # member_to_leader_cap: Optional[float] = None,
+    # leader_to_member_value: Optional[float] = None,
+    # member_to_leader_value: Optional[float] = None,
 
     strength: Optional[float] = None,
 
@@ -479,6 +485,12 @@ def run_multiple_simulations(
         conditions_to_run = [
             _build_single_condition_from_arguments(
                 population_size=population_size,
+                susceptibility=susceptibility,
+                expressiveness=expressiveness,
+                amplification=amplification,
+                bias=bias,
+
+                directed=directed,
                 structure=structure,
                 leader_style=leader_style,
                 max_iterations=max_iterations,
@@ -542,18 +554,24 @@ def run_multiple_simulations(
         for seed in seeds:
             global_run_counter += 1
             run_id = global_run_counter
-
+            print(f"Running structure={condition['structure']}, leader={condition['leader_style']}, seed={seed}")
             results = run_simulation(
                 seed=seed,
                 run_id=run_id,
 
                 population_size=condition["population_size"],
+                susceptibility=condition["susceptibility"],
+                expressiveness=condition["expressiveness"],
+                amplification=condition["amplification"],
+                bias=condition["bias"],
+
                 structure=condition["structure"],
+                directed=condition["directed"],
                 leader_style=condition["leader_style"],
                 max_iterations=condition["max_iterations"],
 
-                min_weight=condition.get("min_weight", 0.01),
-                include_leader_ties=condition.get("include_leader_ties", True),
+                min_weight=condition.get("min_weight"),
+                include_leader_ties=condition.get("include_leader_ties"),
                 # leader_to_member_cap=condition.get("leader_to_member_cap"),
                 # member_to_leader_cap=condition.get( "member_to_leader_cap"),
                 # leader_to_member_value=condition.get("leader_to_member_value"),
