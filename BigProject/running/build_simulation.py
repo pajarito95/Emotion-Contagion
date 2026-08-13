@@ -40,13 +40,9 @@ def validate_style(style: str) -> None:
 def select_and_configure_leader(rng: np.random.Generator, agents: list[dict], leader_style: str) -> tuple[list[dict], int]:
     leader_og_index = int(rng.integers(0, len(agents)))  # use this to randomly select a leader from agents list
     leader = agents.pop(leader_og_index)
-
     leader = configure_leader(leader, leader_style)
-    
     agents.append(leader)  # add leader back to the end of the agents list so it stays within, and agent-matrix indexing still aligns exactly and is easy to iterate over and the last index can easily just be excluded
-    
     leader_index = len(agents) - 1
-
     return agents, leader_index
 
 def assign_indices_and_roles(agents: list[dict], leader_index: int) -> list[dict]:
@@ -60,22 +56,22 @@ def build_initial_intimacy_matrix(
     population_size: int,
     structure: str,
     directed: bool,
-    min_weight: float = 0.01,
-    leader_index: int = -1,
-    include_leader_ties: bool = True,
-    # leader_to_member_cap: Optional[float] = None,
-    # member_to_leader_cap: Optional[float] = None,
-    # leader_to_member_value: Optional[float] = None,
-    # member_to_leader_value: Optional[float] = None,
-    strength: Optional[float] = None,
-    n_communities: Optional[int] = None,
-    intra_strength: Optional[float] = None,
-    inter_strength: Optional[float] = None,
-    core_proportion: Optional[float] = None,
-    core_to_core: Optional[float] = None,
-    core_to_periph: Optional[float] = None,
-    periph_to_core: Optional[float] = None,
-    periph_to_periph: Optional[float] = None,
+
+    leader_index: int,
+    include_leader_ties: bool,
+
+    strength: float,
+
+    n_communities: int,
+    intra_strength: float,
+    inter_strength: float,
+
+    n_peripheries: int,
+    core_proportion: float,
+    core_to_core: float,
+    core_to_periph: float,
+    periph_to_core: float,
+    periph_to_periph: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Build one unified intimacy matrix over all member agents. Base matrix generation is delegated to network.py.
@@ -86,13 +82,17 @@ def build_initial_intimacy_matrix(
         population=population_size,
         structure=structure,
         directed=directed,
-        min_weight=min_weight,
+
         leader_index=leader_index,
         include_leader_ties=include_leader_ties,
+
         strength=strength,
+
         n_communities=n_communities,
         intra_strength=intra_strength,
         inter_strength=inter_strength,
+
+        n_peripheries=n_peripheries,
         core_proportion=core_proportion,
         core_to_core=core_to_core,
         core_to_periph=core_to_periph,
@@ -105,28 +105,30 @@ def build_initial_intimacy_matrix(
 def initialize_simulation(
     rng: np.random.Generator,
     population_size: int,
+
     susceptibility: float,
     expressiveness: float,
     amplification: float,
     bias: float,
+
     structure: str,
     directed: bool,
+
     leader_style: str,
-    min_weight: float = 0.01,
-    include_leader_ties: bool = True,
-    # leader_to_member_cap: Optional[float] = None,
-    # member_to_leader_cap: Optional[float] = None,
-    # leader_to_member_value: Optional[float] = None,
-    # member_to_leader_value: Optional[float] = None,
-    strength: Optional[float] = None,
-    n_communities: Optional[int] = None,
-    intra_strength: Optional[float] = None,
-    inter_strength: Optional[float] = None,
-    core_proportion: Optional[float] = None,
-    core_to_core: Optional[float] = None,
-    core_to_periph: Optional[float] = None,
-    periph_to_core: Optional[float] = None,
-    periph_to_periph: Optional[float] = None,
+    include_leader_ties: bool,
+
+    strength: float,
+
+    n_communities: int,
+    intra_strength: float,
+    inter_strength: float,
+
+    n_peripheries: int,
+    core_proportion: float,
+    core_to_core: float,
+    core_to_periph: float,
+    periph_to_core: float,
+    periph_to_periph: float,
 ) -> SimulationState:
     """
     Create full initial simulation state.
@@ -153,17 +155,17 @@ def initialize_simulation(
         population_size=population_size,
         structure=structure,
         directed=directed,
-        min_weight=min_weight,
+
         leader_index=leader_index,
         include_leader_ties=include_leader_ties,
-        # leader_to_member_cap=leader_to_member_cap,
-        # member_to_leader_cap=member_to_leader_cap,
-        # leader_to_member_value=leader_to_member_value,
-        # member_to_leader_value=member_to_leader_value,
+
         strength=strength,
+
         n_communities=n_communities,
         intra_strength=intra_strength,
         inter_strength=inter_strength,
+
+        n_peripheries=n_peripheries,
         core_proportion=core_proportion,
         core_to_core=core_to_core,
         core_to_periph=core_to_periph,
@@ -171,6 +173,7 @@ def initialize_simulation(
         periph_to_periph=periph_to_periph,
     )
 
+    # NOTE: maybe don't track all this?
     metadata = {
         "population_size": population_size,
         "structure": structure,
@@ -178,14 +181,13 @@ def initialize_simulation(
         "leader_style": leader_style,
         "leader_index": leader_index,
         "include_leader_ties": include_leader_ties,
-        # "leader_to_member_cap": leader_to_member_cap,
-        # "member_to_leader_cap": member_to_leader_cap,
-        # "leader_to_member_value": leader_to_member_value,
-        # "member_to_leader_value": member_to_leader_value,
+
         "strength": strength,
         "n_communities": n_communities,
         "intra_strength": intra_strength,
         "inter_strength": inter_strength,
+
+        "n_peripheries": n_peripheries,
         "core_proportion": core_proportion,
         "core_to_core": core_to_core,
         "core_to_periph": core_to_periph,

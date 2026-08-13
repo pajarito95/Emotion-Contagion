@@ -119,30 +119,35 @@ def build_conditions_from_grid(
 
 def _build_single_condition_from_arguments(
     population_size: Optional[int],
-    structure: Optional[str],
-    leader_style: Optional[str],
     max_iterations: Optional[int],
-    min_weight: float,
+
+    structure: Optional[str],
+    directed: Optional[bool],
+
+    leader_style: Optional[str],
     include_leader_ties: bool,
-    leader_to_member_cap: Optional[float],
-    member_to_leader_cap: Optional[float],
-    leader_to_member_value: Optional[float],
-    member_to_leader_value: Optional[float],
+
     strength: Optional[float],
+
     n_communities: Optional[int],
     intra_strength: Optional[float],
     inter_strength: Optional[float],
+    
+    n_peripheries: Optional[int],
     core_proportion: Optional[float],
     core_to_core: Optional[float],
     core_to_periph: Optional[float],
     periph_to_core: Optional[float],
     periph_to_periph: Optional[float],
+
     adaptive_intimacy: bool,
     kappa: Optional[float],
     decay: Optional[float],
     min_w: Optional[float],
     max_w: Optional[float],
+
     dampening: float,
+    
     use_rl_leader: bool,
     rl_alpha: float,
     rl_gamma: float,
@@ -161,22 +166,21 @@ def _build_single_condition_from_arguments(
     return {
         "condition_name": condition_name,
         "population_size": population_size,
-        "structure": structure,
-        "leader_style": leader_style,
         "max_iterations": max_iterations,
 
-        "min_weight": min_weight,
+        "structure": structure,
+        "directed": directed,
+
+        "leader_style": leader_style,
         "include_leader_ties": include_leader_ties,
-        "leader_to_member_cap": leader_to_member_cap,
-        "member_to_leader_cap": member_to_leader_cap,
-        "leader_to_member_value": leader_to_member_value,
-        "member_to_leader_value": member_to_leader_value,
 
         "strength": strength,
+
         "n_communities": n_communities,
         "intra_strength": intra_strength,
         "inter_strength": inter_strength,
 
+        "n_peripheries": n_peripheries,
         "core_proportion": core_proportion,
         "core_to_core": core_to_core,
         "core_to_periph": core_to_periph,
@@ -269,19 +273,22 @@ def _build_run_metadata(
         "condition": condition,
 
         "structure": results.metadata.get("structure"),
+        "directed": results.metadata.get("directed"),
+
         "leader_style": results.metadata.get("leader_style"),
 
         "population_size": results.metadata.get("population_size"),
         "max_iterations": results.metadata.get("max_iterations"),
 
         "adaptive_intimacy": results.metadata.get("adaptive_intimacy"),
-
+        
         "use_rl_leader": results.metadata.get("use_rl_leader"),
 
         "num_interventions": len(results.intervention_timesteps),
         "intervention_timesteps": results.intervention_timesteps,
     }
 
+# NOTE: maybe update this, simplify
 # NOTE.TXT
 def _format_condition_note(condition: Dict[str, Any], index: int) -> List[str]:
     lines: List[str] = []
@@ -296,6 +303,7 @@ def _format_condition_note(condition: Dict[str, Any], index: int) -> List[str]:
     lines.append(f"Condition name: {condition.get('condition_name')}")
     lines.append(f"Leader style: {condition.get('leader_style')}")
     lines.append(f"Network structure: {condition.get('structure')}")
+    lines.append(f"Directedness: {condition.get('directed')}")
 
     lines.append(f"Population size: {population_size}")
     lines.append("Number of leaders: 1")
@@ -395,43 +403,39 @@ def _make_run_output_dir(
 
 # MAIN BATCH RUNNER
 def run_multiple_simulations(
-    seeds: Sequence[int],
-    conditions: Optional[Sequence[Dict[str, Any]]] = None,
-    condition_grid: Optional[Dict[str, Sequence[Any]]] = None,
-    fixed_params: Optional[Dict[str, Any]] = None,
-    condition_name_keys: Optional[Sequence[str]] = None,
-
+    seeds: Sequence[int] = None,
+    conditions: Sequence[Dict[str, Any]] = None,
+    condition_grid: Dict[str, Sequence[Any]] = None,
+    fixed_params: Dict[str, Any] = None,
+    condition_name_keys: Sequence[str] = None,
     population_size: int = None,
+    max_iterations: int = None,
+
     susceptibility: float = None,
     expressiveness: float = None,
     amplification: float = None,
     bias: float = None,
 
     structure: str = None,
-    directed: str = None,
+    directed: bool = None,
+
     leader_style: str = None,
-    max_iterations: int = None,
+    include_leader_ties: bool = None,
 
-    min_weight: float = 0.01,
-    include_leader_ties: bool = True,
-    # leader_to_member_cap: Optional[float] = None,
-    # member_to_leader_cap: Optional[float] = None,
-    # leader_to_member_value: Optional[float] = None,
-    # member_to_leader_value: Optional[float] = None,
+    strength: float = None,
 
-    strength: Optional[float] = None,
+    n_communities: int = None,
+    intra_strength: float = None,
+    inter_strength: float = None,
 
-    n_communities: Optional[int] = None,
-    intra_strength: Optional[float] = None,
-    inter_strength: Optional[float] = None,
+    n_peripheries: int = None,
+    core_proportion: float = None,
+    core_to_core: float = None,
+    core_to_periph: float = None,
+    periph_to_core: float = None,
+    periph_to_periph: float = None,
 
-    core_proportion: Optional[float] = None,
-    core_to_core: Optional[float] = None,
-    core_to_periph: Optional[float] = None,
-    periph_to_core: Optional[float] = None,
-    periph_to_periph: Optional[float] = None,
-
-    adaptive_intimacy: bool = False,
+    adaptive_intimacy: bool = None,
     kappa: Optional[float] = None,
     decay: Optional[float] = None,
     min_w: Optional[float] = None,
@@ -439,7 +443,7 @@ def run_multiple_simulations(
 
     dampening: float = 0.08,
 
-    use_rl_leader: bool = True,
+    use_rl_leader: bool = False,
     rl_alpha: float = 0.1,
     rl_gamma: float = 0.95,
     rl_epsilon_start: float = 0.3,
@@ -495,12 +499,7 @@ def run_multiple_simulations(
                 leader_style=leader_style,
                 max_iterations=max_iterations,
 
-                min_weight=min_weight,
                 include_leader_ties=include_leader_ties,
-                # leader_to_member_cap=leader_to_member_cap,
-                # member_to_leader_cap=member_to_leader_cap,
-                # leader_to_member_value=leader_to_member_value,
-                # member_to_leader_value=member_to_leader_value,
 
                 strength=strength,
 
@@ -508,6 +507,7 @@ def run_multiple_simulations(
                 intra_strength=intra_strength,
                 inter_strength=inter_strength,
 
+                n_peripheries=n_peripheries,
                 core_proportion=core_proportion,
                 core_to_core=core_to_core,
                 core_to_periph=core_to_periph,
@@ -558,8 +558,9 @@ def run_multiple_simulations(
             results = run_simulation(
                 seed=seed,
                 run_id=run_id,
-
+                max_iterations=condition["max_iterations"],
                 population_size=condition["population_size"],
+
                 susceptibility=condition["susceptibility"],
                 expressiveness=condition["expressiveness"],
                 amplification=condition["amplification"],
@@ -567,15 +568,9 @@ def run_multiple_simulations(
 
                 structure=condition["structure"],
                 directed=condition["directed"],
-                leader_style=condition["leader_style"],
-                max_iterations=condition["max_iterations"],
 
-                min_weight=condition.get("min_weight"),
+                leader_style=condition["leader_style"],
                 include_leader_ties=condition.get("include_leader_ties"),
-                # leader_to_member_cap=condition.get("leader_to_member_cap"),
-                # member_to_leader_cap=condition.get( "member_to_leader_cap"),
-                # leader_to_member_value=condition.get("leader_to_member_value"),
-                # member_to_leader_value=condition.get("member_to_leader_value"),
 
                 strength=condition.get("strength"),
 
@@ -583,6 +578,7 @@ def run_multiple_simulations(
                 intra_strength=condition.get("intra_strength"),
                 inter_strength=condition.get("inter_strength"),
 
+                n_peripheries=condition.get("n_peripheries"),
                 core_proportion=condition.get("core_proportion"),
                 core_to_core=condition.get("core_to_core"),
                 core_to_periph=condition.get("core_to_periph"),

@@ -192,19 +192,19 @@ def emotional_valence_update(
     beta_A = agentA["bias"]
     beta_B = agentB["bias"]
 
-    groupEmos_A = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentA["index"]] for other in agents[:-1] if other is not agentA)
-    groupEmos_B = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentB["index"]] for other in agents[:-1] if other is not agentB)
-
-    if groupEmos_A == 0 or groupEmos_B == 0:
-        raise ValueError("Encountered zero weighted expressiveness while computing q*. Check member-member intimacy normalization and expressiveness values.")
- 
     # OLD: Weighted average of other members' emotions
+    # groupEmos_A = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentA["index"]] for other in agents[:-1] if other is not agentA)
+    # groupEmos_B = sum(other["expressiveness"] * intimacyMatrix[other["index"], agentB["index"]] for other in agents[:-1] if other is not agentB)
+
+    # if groupEmos_A == 0 or groupEmos_B == 0:
+    #     raise ValueError("Encountered zero weighted expressiveness while computing q*. Check member-member intimacy normalization and expressiveness values.")
+ 
     # qstar_A = sum(((sender["expressiveness"]  * intimacyMatrix[sender["index"], agentA["index"]]) / groupEmos_A)  * sender["emotion"] for sender in agents[:-1] if sender is not agentA)
     # qstar_B = sum(((sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]]) / groupEmos_B) * sender["emotion"] for sender in agents[:-1] if sender is not agentB)
 
     # NEW: Plain unweighted average of other members' emotions, excluding self, e_{N(i)}
-    qstar_A = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentA) / (len(agents) - 2)  # minus 2 because we exclude agentA and the leader
-    qstar_B = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentB) / (len(agents) - 2)
+    qstar_A = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentA) / (len(agents[:-1]) - 1)  # minus 1 because we exclude the self
+    qstar_B = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentB) / (len(agents[:-1]) - 1)
 
     PI_A = 1 - (1 - qstar_A) * (1 - initial_qA)
     NI_A = qstar_A * initial_qA
@@ -243,7 +243,7 @@ def agent_interaction(
         agents: list[dict]
             Full agent list including the leader
         intimacyMatrix: np.ndarray
-            N-1xN-1 intimacy matrix over member agents
+            N-1xN-1 intimacy matrix
         absorption_dict: dict
             Cumulative absorption/change tracker
 
@@ -251,7 +251,7 @@ def agent_interaction(
         tuple[list[tuple[int, int]], dict]
             Interacting member index pairs in full-agent indexing and the updated absorption dictionary.
     """
-    n_agents = (len(agents) if include_leader_ties else len(agents) - 1)
+    n_agents = (len(agents) if include_leader_ties else len(agents)-1)
     if agents[-1].get("role") != "leader":
         raise ValueError("Expected last agent to be the leader.")
     if intimacyMatrix.shape != (n_agents, n_agents):
@@ -259,7 +259,7 @@ def agent_interaction(
 
     buddies: list[tuple[int, int]] = []
 
-    buddies_agents = len(agents) - 1
+    buddies_agents = len(agents[:-1])
     for pos_a, i in enumerate(range(buddies_agents)):
         for j in range(pos_a + 1, buddies_agents):
             interaction_prob = max(intimacyMatrix[i, j], intimacyMatrix[j, i])
