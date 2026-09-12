@@ -193,7 +193,7 @@ results = run_simulation(
     population_size=11,
     structure="community",
     leader_style="High_Initially_Constrained",
-    max_iterations=100,
+    max_iterations=100
 )
 ```
 
@@ -207,7 +207,7 @@ batch = run_multiple_simulations(
     population_size=11,
     structure="community",
     leader_style="High_Initially_Constrained",
-    max_iterations=100,
+    max_iterations=100
 )
 ```
 
@@ -222,15 +222,10 @@ Runs one condition.
 
 Use this when you want one setup and one set of seeds.
 
-### 2. `manual`
-Runs a user-written list of conditions.
-
-Use this when you want to explicitly define each condition yourself.
-
-### 3. `grid`
+### 2. `grid`
 Builds conditions automatically from parameter lists using all combinations.
 
-Use this when you want to sweep over combinations of settings.
+Use this when you want to do a combinations of settings (networks and/or leaders).
 
 ---
 
