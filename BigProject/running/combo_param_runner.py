@@ -5,6 +5,8 @@ from run_from_config import load_config, run_from_config
 
 CONFIG_PATH = Path("default.yaml")
 
+# The order of the combinations is important for the labels to match the correct combination. 
+# The order is: adaptive_intimacy, include_leader_ties
 combinations = [
     (True,  True,  "TT"),
     (True,  False, "TF"),
@@ -40,13 +42,3 @@ for adaptive_intimacy, include_leader_ties, label in combinations:
     #    f"directed = {directed}\n",
         encoding="utf-8",
     )
-
-# For when undirected is functional:
-# (True,  True,  True,  "TTT"),
-# (True,  True,  False, "TTF"),
-# (True,  False, True,  "TFT"),
-# (False, True,  True,  "FTT"),
-# (False, False, True,  "FFT"),
-# (True,  False, False, "TFF"),
-# (False, True,  False, "FTF"),
-# (False, False, False, "FFF")

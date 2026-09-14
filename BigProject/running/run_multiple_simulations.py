@@ -29,11 +29,12 @@ from run_simulation import run_simulation
 
 
 DEFAULT_OUTPUT_SUBDIR = "outputs"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # OUTPUT DIRECTORY HELPERS
 def resolve_output_root(output_root: Optional[str | Path] = None) -> Path:
     if output_root is None:
-        return Path.cwd().resolve()
+        return PROJECT_ROOT
     return Path(output_root).expanduser().resolve()
 
 def make_timestamp_string() -> str:

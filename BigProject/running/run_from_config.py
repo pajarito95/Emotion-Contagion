@@ -184,7 +184,7 @@ def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the emotion contagion ABM from .yaml configuration file.")
-    parser.add_argument("--config", default="default.yaml", help="Path to the YAML config file.")
+    parser.add_argument("--config", default=str(CURRENT_DIR / "default.yaml"), help="Path to the YAML config file.")
     args = parser.parse_args()
 
     config = load_config(args.config)
