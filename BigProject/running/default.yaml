@@ -87,7 +87,7 @@ single_condition:
   adaptive_intimacy: false
   kappa: 0.08
   decay: 0.01 
-  min_w: 0.002
+  min_w: -1.0 
   max_w: 1.0
 
   # leader intervention
@@ -119,7 +119,7 @@ grid:
     adaptive_intimacy: false  # VERSION A/B CONTROL
     kappa: 0.08
     decay: 0.01
-    min_w: 0.01
+    min_w: -1.0
     max_w: 1.0
 
     # leader intervention

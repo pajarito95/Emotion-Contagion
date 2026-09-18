@@ -122,8 +122,8 @@ def update_intimacy_matrix(
         raise ValueError("decay must be between 0 and 1.")
     if kappa < 0:
         raise ValueError("kappa must be nonnegative.")
-    if not (-1.0 <= min_w <= max_w <= 1.0):
-        raise ValueError("Require -1 <= min_w <= max_w <= 1.")
+    if min_w < 0 or max_w < 0 or min_w > max_w:
+        raise ValueError("Require 0 <= min_w <= max_w.")
 
     # ── Copy the matrix so we don't mutate the caller's array ──
     A = intimacy.copy()
@@ -153,56 +153,40 @@ def update_intimacy_matrix(
     n_members = len(agents) - 1
     member_block = A[np.ix_(range(n_members), range(n_members))]
 
-    # ── Mask the gain to only affect existing (non-zero) ties ──
-    # Build a 0/1 mask: 1 where the old weight is non-zero, 0 where it's zero.
-    # This prevents gain from creating new ties between agents who currently
-    # have no connection — only existing ties can be strengthened or weakened.
-    existing_tie_mask = (member_block != 0).astype(float)
-
-    # ── Apply the decay + gain update (existing ties only) ──
-    # new_w[i,j] = (1 - decay) * old_w[i,j] + gain[i,j] * mask[i,j]
+    # ── Apply the decay + gain update ──
+    # new_w[i,j] = (1 - decay) * old_w[i,j] + gain[i,j]
     # The (1 - decay) factor shrinks the old weight slightly (forgetting),
-    # then the gain adds or subtracts based on current emotional similarity —
-    # but only for pairs that already have a tie.
-    # Zero entries stay zero: (1-decay)*0 + gain*0 = 0.
-    member_block = (1.0 - decay) * member_block + gain * existing_tie_mask
+    # then the gain adds or subtracts based on current emotional similarity.
+    member_block = (1.0 - decay) * member_block + gain
 
     # ── Zero out self-ties (diagonal) ──
     # An agent has no tie to itself, so w[i,i] must be 0.
-    np.fill_diagonal(member_block, 0.0)
+    np.fill_diagonal(member_block, 0.0) 
 
     # ── Clamp weights to [min_w, max_w] ──
-    # Prevents any single tie from growing unboundedly.
-    # With min_w = -1.0, negative weights are preserved (hostile ties),
-    # but values are still bounded within [-1, 1].
+    # Prevents any single tie from growing unboundedly or going negative.
+    # With min_w = 0.0, weights can be clamped to exactly 0 (tie dies).
     member_block = np.clip(member_block, min_w, max_w)
 
     # ── Zero out the diagonal again ──
     # Clamping may have set diagonal entries to min_w, so we re-zero them.
     np.fill_diagonal(member_block, 0.0)
 
-    # ── Compute absolute row sums for normalisation ──
-    # Uses np.abs() to match network.py's _normalize_rows: the absolute values
-    # in each row must sum to 1 after normalisation, preserving signed weights.
-    # This allows negative ties (hostile/repulsive) to coexist with positive ones
-    # within the same row, with |w_ij| representing tie strength and sign representing valence.
+    # ── Compute row sums for normalisation ──
+    # Each row's outgoing ties must sum to 1 after normalisation.
     # keepdims=True keeps the shape (n_members, 1) so broadcasting works below.
-    row_sums = np.abs(member_block).sum(axis=1, keepdims=True)
+    row_sums = member_block.sum(axis=1, keepdims=True)
 
-    # Handle rows where all ties have decayed to near-zero.
-    # Instead of raising an error, skip normalisation for those rows by using
-    # 1.0 as the divisor — this preserves the tiny values as-is, leaving the
-    # member effectively isolated (all ties ≈ 0). Normal rows are divided by
-    # their abs sum as usual.
-    near_zero_rows = row_sums <= eps
-    safe_sums = np.where(near_zero_rows, 1.0, row_sums)
+    # Safety check: if a row sums to ≈ 0, normalisation would divide by zero.
+    # This means every tie from that member died — the simulation can't proceed.
+    if np.any(row_sums <= eps):
+        raise ValueError("At least one member intimacy row has near-zero sum after update. Try increasing max_w, decreasing decay, or decreasing min_w.")
 
     # ── Row-normalise and write back into the full matrix ──
-    # Divide each row by its safe sum so |w_ij| values sum to 1 per row
-    # (for rows with meaningful content). Near-zero rows keep their tiny
-    # values unchanged. Only the member-member block is overwritten;
-    # leader row/column (if present) is untouched.
-    A[np.ix_(range(n_members), range(n_members))] = member_block / safe_sums
+    # Divide each row by its sum so outgoing weights sum to 1.
+    # The +eps avoids division by zero (defensive, the check above should catch it).
+    # Only the member-member block is overwritten; leader row/column (if present) is untouched.
+    A[np.ix_(range(n_members), range(n_members))] = member_block / (row_sums + eps)
 
     # Return the updated matrix (leader ties, if any, are unchanged).
     return A
@@ -326,7 +310,8 @@ def agent_interaction(
     buddies_agents = len(agents[:-1])
     for pos_a, i in enumerate(range(buddies_agents)):
         for j in range(pos_a + 1, buddies_agents):
-            interaction_prob = max(0.0, intimacyMatrix[i, j], intimacyMatrix[j, i])
+            interaction_prob = max(intimacyMatrix[i, j], intimacyMatrix[j, i])
+
             if rng.random() < interaction_prob:
                 buddies.append((i, j))
 
