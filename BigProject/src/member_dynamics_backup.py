@@ -177,9 +177,9 @@ def update_intimacy_matrix(
     # keepdims=True keeps the shape (n_members, 1) so broadcasting works below.
     row_sums = member_block.sum(axis=1, keepdims=True)
 
-    # Safety check: if a row sums to ≈ 0, normalisation would divide by zero.
+    # Safety check: if a row sums to exactly zero, normalisation would divide by zero.
     # This means every tie from that member died — the simulation can't proceed.
-    if np.any(row_sums <= eps):
+    if np.any(row_sums == 0.0):
         raise ValueError("At least one member intimacy row has near-zero sum after update. Try increasing max_w, decreasing decay, or decreasing min_w.")
 
     # ── Row-normalise and write back into the full matrix ──
@@ -192,7 +192,7 @@ def update_intimacy_matrix(
     return A
 
 
-def emotional_valence_update(
+def emotion_update(
     agentA: dict,
     agentB: dict,
     agentA_index: int,
@@ -221,7 +221,7 @@ def emotional_valence_update(
             Updated absorption dictionary
     """
     if agentA.get("role") != "member" or agentB.get("role") != "member":
-        raise ValueError("emotional_valence_update() expects both interacting agents to have role='member'.")
+        raise ValueError("emotion_update() expects both interacting agents to have role='member'.")
 
     if (agentB_index, agentA_index) not in absorption_dict:
         absorption_dict[(agentB_index, agentA_index)] = 0.0
@@ -317,7 +317,7 @@ def agent_interaction(
 
     for i, j in buddies:
         agentA, agentB = agents[i], agents[j]
-        absorption_dict = emotional_valence_update(
+        absorption_dict = emotion_update(
             agentA=agentA,
             agentB=agentB,
             agentA_index=i,

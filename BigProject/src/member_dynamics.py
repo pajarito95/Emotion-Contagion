@@ -17,26 +17,21 @@ import numpy as np
 # def get_member_indices(agents: List[dict], leader_index: int) -> List[int]:
 #     """
 #     Return the indices of all non-leader agents.
-
 #     Parameters:
 #         agents: list[dict]
 #             Full agent list including the leader
 #         leader_index: int
 #             Index of the leader
-
 #     Returns:
 #         list[int]
 #             Indices of member agents only.
 #     """
 #     if not isinstance(agents, list) or len(agents) == 0:
 #         raise ValueError("agents must be a non-empty list.")
-    
 #     if not isinstance(leader_index, int):
 #         raise TypeError("leader_index must be an integer.")
-    
 #     if not (0 <= leader_index < len(agents)):
 #         raise ValueError(f"leader_index={leader_index} is out of bounds for {len(agents)} agents.")
-
 #     return [i for i, agent in enumerate(agents) if agent.get("role") == "member"]
 
 
@@ -74,7 +69,6 @@ def update_intimacy_matrix(
     decay: float,
     min_w: float,
     max_w: float,
-    eps: float = 1e-9
 ) -> np.ndarray:
     """
     Adapt member-member intimacy weights based on emotional similarity.
@@ -97,8 +91,6 @@ def update_intimacy_matrix(
             Minimum post-update member-member weight
         max_w: float
             Maximum post-update member-member weight
-        eps: float, optional
-            Small constant to avoid division by zero
 
     Returns:
         np.ndarray
@@ -189,26 +181,25 @@ def update_intimacy_matrix(
     # keepdims=True keeps the shape (n_members, 1) so broadcasting works below.
     row_sums = np.abs(member_block).sum(axis=1, keepdims=True)
 
-    # Handle rows where all ties have decayed to near-zero.
+    # Handle rows where all ties are exactly zero.
     # Instead of raising an error, skip normalisation for those rows by using
-    # 1.0 as the divisor — this preserves the tiny values as-is, leaving the
-    # member effectively isolated (all ties ≈ 0). Normal rows are divided by
+    # 1.0 as the divisor — this preserves the zero values as-is, leaving the
+    # member effectively isolated (all ties = 0). Normal rows are divided by
     # their abs sum as usual.
-    near_zero_rows = row_sums <= eps
-    safe_sums = np.where(near_zero_rows, 1.0, row_sums)
+    zero_rows = row_sums == 0.0
+    safe_sums = np.where(zero_rows, 1.0, row_sums)
 
     # ── Row-normalise and write back into the full matrix ──
     # Divide each row by its safe sum so |w_ij| values sum to 1 per row
-    # (for rows with meaningful content). Near-zero rows keep their tiny
+    # (for rows with meaningful content). All-zero rows keep their zero
     # values unchanged. Only the member-member block is overwritten;
     # leader row/column (if present) is untouched.
     A[np.ix_(range(n_members), range(n_members))] = member_block / safe_sums
 
-    # Return the updated matrix (leader ties, if any, are unchanged).
     return A
 
 
-def emotional_valence_update(
+def emotion_update(
     agentA: dict,
     agentB: dict,
     agentA_index: int,
@@ -237,7 +228,7 @@ def emotional_valence_update(
             Updated absorption dictionary
     """
     if agentA.get("role") != "member" or agentB.get("role") != "member":
-        raise ValueError("emotional_valence_update() expects both interacting agents to have role='member'.")
+        raise ValueError("emotion_update() expects both interacting agents to have role='member'.")
 
     if (agentB_index, agentA_index) not in absorption_dict:
         absorption_dict[(agentB_index, agentA_index)] = 0.0
@@ -267,7 +258,7 @@ def emotional_valence_update(
     # qstar_B = sum(((sender["expressiveness"] * intimacyMatrix[sender["index"], agentB["index"]]) / groupEmos_B) * sender["emotion"] for sender in agents[:-1] if sender is not agentB)
 
     # NEW: Plain unweighted average of other members' emotions, excluding self, e_{N(i)}
-    qstar_A = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentA) / (len(agents[:-1]) - 1)  # minus 1 because we exclude the self
+    qstar_A = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentA) / (len(agents[:-1]) - 1)  # minus 1 because for the self exclusion
     qstar_B = sum(sender["emotion"] for sender in agents[:-1] if sender is not agentB) / (len(agents[:-1]) - 1)
 
     PI_A = 1 - (1 - qstar_A) * (1 - initial_qA)
@@ -291,7 +282,7 @@ def agent_interaction(
     agents: List[dict],
     intimacyMatrix: np.ndarray,
     absorption_dict: Dict[Tuple[int, int], float],
-    include_leader_ties: bool,
+    include_leader_ties: bool
 ) -> tuple[list[tuple[int, int]], Dict[Tuple[int, int], float]]:
     """
     Define pairwise member-member interactions based on intimacy probabilities, then apply the emotional contagion update to each selected pair.
@@ -332,7 +323,7 @@ def agent_interaction(
 
     for i, j in buddies:
         agentA, agentB = agents[i], agents[j]
-        absorption_dict = emotional_valence_update(
+        absorption_dict = emotion_update(
             agentA=agentA,
             agentB=agentB,
             agentA_index=i,
