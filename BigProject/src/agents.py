@@ -81,10 +81,15 @@ def make_agents(rng: np.random.Generator,
     """
     validate_population_size(population_size)
     agents = []
-    # UPDATE: set fixed values (except emotion); pick values in default.yaml file
+    # Note about emotion:
+    # beta: gives right skew/tail
+    # beta(a,b): mean a/(a+b)
+    # beta(a,b)*c: multiplier c controls width of range window (how wide the spread is). Ex: 0.3 -> [0, 0.3], 0.2 -> [0, 0.2]
+    # d + beta(a,b): d controls lower bound/starting point of distribution
+    # d + beta(a,b)*c: give right skewed distribution starting at d, with a range width of c, and a mean centered at a/(a+b)
     for _ in range(population_size):
         agent = {
-            "emotion": -0.5 + rng.beta(2, 5),
+            "emotion": rng.beta(2, 5)*0.35,  # emotions more between (0, 0.35)
             "susceptibility": susceptibility,
             "expressiveness": expressiveness,
             "amplification": amplification,
@@ -127,11 +132,11 @@ def configure_leader(leader: Dict[str, Any], style: str) -> Dict[str, Any]:
 
     if style == "High_Initially_Constrained" or style == "High_Fully_Constrained":
         leader["emotionManagementAbility"] = "High"
-        leader["interventionThreshold"] = -0.5
+        leader["interventionThreshold"] = 0.25
 
     elif style == "Low_Initially_Constrained" or style == "Low_Fully_Constrained":
         leader["emotionManagementAbility"] = "Low"
-        leader["interventionThreshold"] = -0.7
+        leader["interventionThreshold"] = 0.15
 
     elif style == "No_Intervention":
         leader["emotionManagementAbility"] = "None"

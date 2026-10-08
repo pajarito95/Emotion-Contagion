@@ -77,11 +77,15 @@ def compute_homophily_index(agents, intimacy_matrix, tau: float = 0.35):
     return float(np.mean(similar_weights) - np.mean(dissimilar_weights))
 
 # RL STATE
-def compute_state(agents, intimacy_matrix):
+def compute_state(agents, intimacy_matrix, homophily_index=None):
     """
     RL state representation.
 
     State vector: [mean_emotion, variance_emotion, homophily_index]
+
+    If homophily_index is provided, it is reused instead of recomputing
+    (avoids a redundant O(N^2) call when homophily was already calculated
+    for the history in the same timestep).
 
     Returns:
         np.ndarray shape (3,)
@@ -90,7 +94,8 @@ def compute_state(agents, intimacy_matrix):
     emos = np.array([agent["emotion"] for agent in agents[:-1]])
     mean_emotion = emos.mean()
     variance_emotion = emos.var()
-    homophily_index = compute_homophily_index(agents, intimacy_matrix)
+    if homophily_index is None:
+        homophily_index = compute_homophily_index(agents, intimacy_matrix)
 
     return np.array([mean_emotion, variance_emotion, homophily_index], dtype=float)
 
@@ -127,8 +132,7 @@ def apply_leader_action(action, agents, leader_index, intimacy_matrix=None):
         action : int
         agents : list[dict]
         leader : dict
-        leader_intimacy : np.ndarray
-            Leader-to-agent intimacy vector.
+        intimacy_matrix : 
     """
 
     if action == 0:
@@ -147,11 +151,11 @@ def apply_leader_action(action, agents, leader_index, intimacy_matrix=None):
         raise ValueError(f"Unknown RL action: {action}")
 
     leader = agents[leader_index]
-    #leader_intimacy = intimacy_matrix[leader_index]
+    leader_intimacy = intimacy_matrix[leader_index]
 
     for agent in agents[:-1]:
-        agent["emotion"] += dampening * (leader["emotion"] - agent["emotion"]) * agent["susceptibility"] #* leader_intimacy[agent["index"]])
-        agent["emotion"] = np.clip(agent["emotion"], -1, 1)
+        agent["emotion"] += dampening * (leader["emotion"] - agent["emotion"]) * agent["susceptibility"] * leader_intimacy[agent["index"]]
+        agent["emotion"] = np.clip(agent["emotion"], 0.0, 1.0)
 
 
 # TABULAR Q-LEARNING POLICY
@@ -213,12 +217,10 @@ class QLearningLeaderPolicy:
         Continuous -> discrete state bins.
         """
         mean_emotion, variance_emotion, homophily = state
-        i_mean = self._bin_value(mean_emotion,-1.0, 1.0, self.n_bins_mean)
+        i_mean = self._bin_value(mean_emotion, 0.0, 1.0, self.n_bins_mean)
         i_var = self._bin_value(variance_emotion, 0.0, 1.0, self.n_bins_var)
 
-        # original approximate homophily range
-        # TODO: verify you want this range
-        i_homo = self._bin_value(homophily, 0.0, 0.05, self.n_bins_homo)
+        i_homo = self._bin_value(homophily, -0.5, 0.5, self.n_bins_homo)
 
         return (i_mean, i_var, i_homo)
 

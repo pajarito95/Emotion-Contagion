@@ -463,6 +463,7 @@ def run_multiple_simulations(
     save_run_metadata: bool = True,
     save_summary: bool = True,
     save_q_tables: bool = True,
+    keep_results: bool = True,
     summary_filename: str = "summary.csv",
     results_filename_template: str = "simulation_result_run_{run_id}.pkl",
     metadata_filename_template: str = "simulation_result_run_{run_id}_metadata.json",
@@ -546,11 +547,8 @@ def run_multiple_simulations(
     summary_rows = []
 
     global_run_counter = 0
-    print(conditions_to_run[0])
-    for c in conditions_to_run:
-        print(c["leader_style"], c.get("use_rl_leader"))
     for condition_index, condition in enumerate(conditions_to_run, start=1):
-        current_condition_name = condition.get(f"condition_name: condition_{condition_index}")
+        current_condition_name = condition.get("condition_name")
 
         for seed in seeds:
             global_run_counter += 1
@@ -605,7 +603,8 @@ def run_multiple_simulations(
                 condition_name=current_condition_name
             )
 
-            all_results.append(results)
+            if keep_results:
+                all_results.append(results)
             summary_rows.append(_results_to_summary_row(results=results, condition_name=current_condition_name, condition_index=condition_index))
 
             # SAVE
@@ -640,3 +639,7 @@ def run_multiple_simulations(
         "output_dir": output_dir,
         "conditions_used": conditions_to_run,
     }
+
+    # If keep_results=False, all_results is empty and results have been
+    # saved to disk already.  This avoids holding 1000s of large objects
+    # in memory when running big population sizes.

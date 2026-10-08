@@ -199,7 +199,7 @@ def run_simulation(
     homophily_history.append(initial_homophily)
 
     if policy is not None:
-        state_t = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix)
+        state_t = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix, homophily_index=initial_homophily)
         prev_quality = compute_quality( agents=state.agents)
         rl_quality.append(prev_quality)
 
@@ -288,7 +288,7 @@ def run_simulation(
             reward_t = new_quality - prev_quality
             prev_quality = new_quality
 
-            state_tp1 = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix)
+            state_tp1 = compute_state(agents=state.agents, intimacy_matrix=state.intimacy_matrix, homophily_index=homophily_t)
 
             policy.update(state=state_t, action=action_t, reward=reward_t, next_state=state_tp1, done=done)
 

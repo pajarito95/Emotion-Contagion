@@ -17,37 +17,7 @@ output:
 
 seed_spec:
   start: 0
-  n_repetitions: 100
-
-# ============================================================
-# RL DEFAULTS
-rl:
-  use_rl_leader: true
-
-  actions: [0, 1, 2, 3]
-
-  q_learning:
-    alpha: 0.1
-    gamma: 0.95
-
-    epsilon_start: 0.3
-    epsilon_end: 0.05
-    epsilon_decay_steps: 2000
-
-  state_bins:
-    n_bins_mean: 5
-    n_bins_var: 4
-    n_bins_homo: 4
-
-  state_ranges:
-    mean_min: -1.0
-    mean_max: 1.0
-
-    var_min: 0.0
-    var_max: 1.0
-
-    homo_min: 0.0
-    homo_max: 0.05
+  n_repetitions: 30
 
 # ============================================================
 # SINGLE CONDITION
@@ -119,7 +89,7 @@ grid:
     adaptive_intimacy: false  # VERSION A/B CONTROL
     kappa: 0.08
     decay: 0.01
-    min_w: -1.0
+    min_w: 0
     max_w: 1.0
 
     # leader intervention
@@ -127,22 +97,28 @@ grid:
 
     # RL
     use_rl_leader: true
+    rl_alpha: 0.1
+    rl_gamma: 0.95
+    rl_epsilon_start: 0.3
+    rl_epsilon_end: 0.05
+    rl_epsilon_decay_steps: 2000
+    rl_actions: [0, 1, 2, 3]
 
     # random
     strength: 0.5
 
     # community
     n_communities: 2
-    intra_strength: 0.5
+    intra_strength: 0.7
     inter_strength: 0.2
 
     # core-periphery
     n_peripheries: 3
     core_proportion: 0.25
     core_to_core: 0.65
-    core_to_periph: 0.5
-    periph_to_core: 0.2
-    periph_to_periph: 0.1
+    core_to_periph: 0.3
+    periph_to_core: 0
+    periph_to_periph: 0.8
 
   condition_grid:
 
@@ -155,6 +131,6 @@ grid:
       - No_Intervention
       - High_Fully_Constrained
       - Low_Fully_Constrained
-      - High_Initially_Constrained
-      - Low_Initially_Constrained
-      - Free
+      # - High_Initially_Constrained
+      # - Low_Initially_Constrained
+      # - Free

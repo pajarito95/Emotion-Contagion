@@ -267,11 +267,11 @@ def emotion_update(
     NI_B = qstar_B * initial_qB
 
     agentA["emotion"] += gamma_A * (eta_A  * (beta_A * PI_A + (1 - beta_A) * NI_A) + (1 - eta_A) * qstar_A  - initial_qA)
-    agentA["emotion"] = float(np.clip(agentA["emotion"], -1.0, 1.0))
+    agentA["emotion"] = float(np.clip(agentA["emotion"], 0.0, 1.0))
     absorption_dict[(agentB_index, agentA_index)] += abs(initial_qA - agentA["emotion"])
 
     agentB["emotion"] += gamma_B * (eta_B * (beta_B * PI_B + (1 - beta_B) * NI_B) + (1 - eta_B) * qstar_B - initial_qB)
-    agentB["emotion"] = float(np.clip(agentB["emotion"], -1.0, 1.0))
+    agentB["emotion"] = float(np.clip(agentB["emotion"], 0.0, 1.0))
     absorption_dict[(agentA_index, agentB_index)] += abs(initial_qB - agentB["emotion"])
 
     return absorption_dict

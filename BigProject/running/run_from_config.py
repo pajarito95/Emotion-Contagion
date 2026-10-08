@@ -149,7 +149,7 @@ def _combine_batch_outputs(batches: list[Dict[str, Any]]) -> Dict[str, Any]:
         "summary_path": summary_path,
     }
 
-def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
+def run_from_config(config: Dict[str, Any], keep_results: bool = True) -> Dict[str, Any]:
     """
     Run simulations according to the YAML config.
 
@@ -157,6 +157,9 @@ def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
     - single
     - manual
     - grid
+
+    If keep_results=False, full result objects are saved to disk but not
+    kept in the returned batch (saves memory for large population sizes).
     """
     mode = config.get("mode", "single")
     seeds = _resolve_seeds(config)
@@ -166,16 +169,16 @@ def run_from_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if mode == "single":
         single = config.get("single_condition", {})
-        batch = run_multiple_simulations(seeds=seeds, **single, **output_kwargs)
+        batch = run_multiple_simulations(seeds=seeds, **single, **output_kwargs, keep_results=keep_results)
     elif mode == "manual":
         conditions = config.get("manual_conditions", [])
-        batch = run_multiple_simulations(seeds=seeds, conditions=conditions, **output_kwargs)
+        batch = run_multiple_simulations(seeds=seeds, conditions=conditions, **output_kwargs, keep_results=keep_results)
     elif mode == "grid":
         grid_cfg = config.get("grid", {})
         condition_grid = grid_cfg.get("condition_grid", {})
         fixed_params = grid_cfg.get("fixed_params", {})
         condition_name_keys = grid_cfg.get("condition_name_keys")
-        batch = run_multiple_simulations(seeds=seeds, condition_grid=condition_grid, fixed_params=fixed_params, condition_name_keys=condition_name_keys, **output_kwargs)
+        batch = run_multiple_simulations(seeds=seeds, condition_grid=condition_grid, fixed_params=fixed_params, condition_name_keys=condition_name_keys, **output_kwargs, keep_results=keep_results)
     else:
         raise ValueError(f"Unsupported mode {mode!r}. Choose from 'single', 'manual', or 'grid'.")
 

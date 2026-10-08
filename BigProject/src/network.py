@@ -62,8 +62,7 @@ def _sample_signed_weight(rng: np.random.Generator, lower_bound: float = -1.0, u
     if not (-1.0 <= lower_bound <= 1.0 and -1.0 <= upper_bound <= 1.0):
         raise ValueError(f"Signed weights must stay within [-1, 1], but received [{lower_bound}, {upper_bound}].")
     
-    weight = float(rng.normal(loc=0.5, scale=0.25))  # normal distribution centered at 0.5 with std dev of 0.25, no clipping
-    # weight = np.clip(weight, -1.0, 1.0)
+    weight = float(np.clip(rng.normal(loc=0.5, scale=0.25), lower_bound, upper_bound))
     return weight
 
 def _community_assignments(rng: np.random.Generator, population: int, n_communities: int) -> np.ndarray:
@@ -179,9 +178,19 @@ def _iter_pairs(n: int):
         for j in range(i+1,n):
             yield i,j
 
-def no_lonelies(W: np.ndarray, rng: np.random.Generator, directed: bool) -> None:
+def no_lonelies(W: np.ndarray, rng: np.random.Generator, directed: bool, assignments: np.ndarray = None, leader_index: int = None, structure: str = None) -> None:
     """
-    Ensure every node has at least one outgoing connection
+    Ensure every node has at least one outgoing connection.
+
+    If assignments is provided with structure='community', lonely nodes are
+    only connected to members of their own community.
+
+    If assignments is provided with structure='core_periphery', lonely periphery
+    nodes are only connected to the core or their own periphery group,
+    never to a different periphery group.
+
+    If leader_index is provided, the leader is excluded from candidates
+    so that no_lonelies does not modify the leader's carefully set ties.
     """
     n = W.shape[0]
     for i in range(n):
@@ -189,6 +198,25 @@ def no_lonelies(W: np.ndarray, rng: np.random.Generator, directed: bool) -> None
             continue
 
         candidates = [j for j in range(n) if j != i]
+
+        # Exclude leader from candidates (don't modify leader's ties)
+        if leader_index is not None:
+            candidates = [j for j in candidates if j != leader_index]
+
+        # Respect group structure when assignments are provided
+        if assignments is not None:
+            group_i = assignments[i]
+            if structure == "community":
+                # All communities are equal: only connect within same community
+                candidates = [j for j in candidates if assignments[j] == group_i]
+            elif structure == "core_periphery":
+                # Periphery nodes: only core or same periphery group
+                if group_i != 0:
+                    candidates = [j for j in candidates if assignments[j] == 0 or assignments[j] == group_i]
+
+        if not candidates:
+            continue
+
         j = rng.choice(candidates)
 
         if directed:
@@ -324,6 +352,58 @@ def create_intimacy_matrix(
                     W[j,i] = value
 
     np.fill_diagonal(W, 0.0)
-    no_lonelies(W, rng, directed)
+
+    # Rebuild leader's outgoing ties with fixed count per group and weight 1.0
+    # This ensures: (a) equal ties per periphery/community, (b) no negative weights,
+    # (c) no random weight variation, (d) unidirectional leader → members only.
+    if include_leader_ties and structure in ("core_periphery", "community"):
+        # Zero out leader's row (outgoing) and column (incoming)
+        W[leader_index, :] = 0.0
+        W[:, leader_index] = 0.0
+
+        if structure == "core_periphery":
+            periphery_groups = sorted(set(assignments[assignments != 0]))
+            avg_group_size = (network_population - 1) / len(periphery_groups)
+            count = max(1, round(core_to_periph * avg_group_size))
+
+            for p in periphery_groups:
+                members_in_p = [j for j in range(network_population) if assignments[j] == p and j != leader_index]
+                n_select = min(count, len(members_in_p))
+                if n_select > 0:
+                    selected = rng.choice(members_in_p, size=n_select, replace=False)
+                    for j in selected:
+                        W[leader_index, int(j)] = 1.0
+
+        elif structure == "community":
+            leader_community = assignments[leader_index]
+            communities = sorted(set(assignments))
+            other_communities = [c for c in communities if c != leader_community]
+
+            # Own community: intra_strength fraction
+            own_members = [j for j in range(network_population) if assignments[j] == leader_community and j != leader_index]
+            own_count = min(len(own_members), round(intra_strength * len(own_members)))
+            if own_count > 0:
+                selected = rng.choice(own_members, size=own_count, replace=False)
+                for j in selected:
+                    W[leader_index, int(j)] = 1.0
+
+            # Other communities: inter_strength fraction, equal count across all
+            if other_communities:
+                other_members_all = [j for j in range(network_population) if assignments[j] in other_communities]
+                avg_other_size = len(other_members_all) / len(other_communities)
+                other_count = max(1, round(inter_strength * avg_other_size))
+
+                for c in other_communities:
+                    members_in_c = [j for j in range(network_population) if assignments[j] == c and j != leader_index]
+                    n_select = min(other_count, len(members_in_c))
+                    if n_select > 0:
+                        selected = rng.choice(members_in_c, size=n_select, replace=False)
+                        for j in selected:
+                            W[leader_index, int(j)] = 1.0
+
+    no_lonelies(W, rng, directed,
+                assignments=assignments if structure in ("core_periphery", "community") else None,
+                leader_index=leader_index if include_leader_ties and structure in ("core_periphery", "community") else None,
+                structure=structure)
 
     return _normalize_rows(W), assignments

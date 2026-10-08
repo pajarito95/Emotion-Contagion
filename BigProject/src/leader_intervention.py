@@ -143,7 +143,7 @@ def apply_leader_intervention(
     intimacy_matrix: np.ndarray,
     include_leader_ties: bool,
     dampening: float = 0.08,
-    clip_min: float = -1.0,
+    clip_min: float = 0.0,
     clip_max: float = 1.0,
 ) -> List[dict]:
     """
@@ -176,8 +176,8 @@ def apply_leader_intervention(
         if member["index"] != member_index:
             raise ValueError(f"Member at list position {member_index} has index={member['index']} but expected {member_index}.")
 
-        #influence_weight = float(intimacy_matrix[leader_index, member_index])
-        member["emotion"] += dampening * (leader["emotion"] - member["emotion"]) * member["susceptibility"] #* influence_weight
+        influence_weight = float(intimacy_matrix[leader_index, member_index])
+        member["emotion"] += dampening * (leader["emotion"] - member["emotion"]) * member["susceptibility"] * influence_weight
         member["emotion"] = float(np.clip(member["emotion"], clip_min, clip_max))
 
     return agents
@@ -191,7 +191,7 @@ def run_leader_intervention(
     include_leader_ties: bool,
     intimacy_matrix: np.ndarray,
     dampening: float = 0.08,
-    clip_min: float = -1.0,
+    clip_min: float = 0.0,
     clip_max: float = 1.0,
     force_intervention: bool = False,
     leader_has_intervened: bool = False,

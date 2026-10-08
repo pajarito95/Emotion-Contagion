@@ -57,7 +57,7 @@ def plot_sentiment_evolution(results, save_path: Optional[str | Path] = None, sh
     ax.set_xlabel("Timestep")
     ax.set_ylabel("Emotion")
     ax.set_title(f"Sentiment Evolution | Style: {leader_style} | Structure: {structure} | Seed: {seed} | Run: {run_id}")
-    ax.set_ylim(-1, 1)
+    ax.set_ylim(0, 1)
     ax.grid(True, alpha=0.3)
     ax.legend()
     fig.tight_layout()
